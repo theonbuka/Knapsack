@@ -1,0 +1,21 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "npm install": true,
+        "Rename-Item": true,
+        "git add": true,
+        "git commit": true,
+        "npm run build": true,
+        "/^cd knapsack-app ; python tests/e2e/test_knapsack\\.py$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "ForEach-Object": true,
+        "Test-Path": true,
+        "C:/Users/Onurk/OneDrive/Masaüstü/Alpha/.venv/Scripts/python.exe": true,
+        "Set-Content": true,
+        "/^Get-Item \\.\\\\lint-report\\.json \\| Select-Object FullName,Length$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

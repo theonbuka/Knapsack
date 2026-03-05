@@ -1,16 +1,155 @@
-# React + Vite
+# 💰 Knapsack - Finansal Yönetim Uygulaması
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Knapsack, modern tasarımı ve güçlü özellikleriyle kişisel ve profesyonel mali yönetimi kolaylaştıran açık kaynak kodlu bir web uygulamasıdır.
 
-Currently, two official plugins are available:
+## 🎯 Özellikler
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 📊 **Gelişmiş Analitik**: Harcamaları grafikleriyle görselleştir
+- 💳 **İşlem Yönetimi**: Tüm gelir, gider ve transferlerini takip et
+- 🏦 **Varlık Yönetimi**: Bankaları ve cüzdanları organize et
+- 📅 **Takvim Görünümü**: Harcamalarını tarih bazında incele
+- ⚙️ **Özelleştirme**: Kategoriler, cüzdanlar ve para birimlerini özelleştir
+- 🌙 **Koyu/Açık Mod**: Gözünü yorma, istediğin tema seç
+- 📱 **Mobil Uyumlu**: Telefondan, tablettten, masaüstünden erişebilir
+- ⚡ **Hızlı & Hafif**: Vite ile optimize edilmiş performans
 
-## React Compiler
+## 🛠️ Teknoloji Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Kategori | Teknoloji |
+|----------|-----------|
+| **Framework** | React 19 |
+| **Build Tool** | Vite 8 |
+| **Styling** | Tailwind CSS 4 |
+| **Routing** | React Router v6 |
+| **Animasyonlar** | Framer Motion |
+| **İkonlar** | Lucide React |
+| **Data Storage** | localStorage (IndexedDB hazır) |
 
-## Expanding the ESLint configuration
+## 🚀 Kurulum
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Gereksinimler
+- Node.js 16+ 
+- npm veya yarn
+
+### Adımlar
+
+```bash
+# 1. Repoyu clone et
+git clone <repo-url>
+cd knapsack-app
+
+# 2. Bağımlılıkları yükle
+npm install
+
+# 3. Geliştirme sunucusunu başlat
+npm run dev
+
+# 4. Tarayıcıda aç
+# http://localhost:5173
+```
+
+## 📖 Kullanım
+
+### Ana Sayfalar
+
+- **🏠 Anasayfa**: Hızlı özet, son işlemler, bakiye
+- **💸 İşlemler**: Tüm gelir/gider işlemlerini yönet
+- **💎 Varlıklarım**: Banka hesapları ve cüzdanları yönet
+- **📊 Analitik**: Detaylı raporlar ve istatistikler
+- **💸 Harcamalar**: Kategori bazlı harcama analizi
+- **📅 Takvim**: Tarih bazında işlem görünümü
+- **⚙️ Ayarlar**: Tema, para birimi, kategori ve cüzdan ayarları
+
+### Hızlı İşlem Ekleme
+
+Sağ altta "+" butonu ile hızlı işlem ekle modalını aç:
+- Türü seç (Gider/Gelir/Transfer)
+- Miktar gir
+- Para birimi seç
+- Kategori belirle
+- Notu ekle (opsiyonel)
+
+## 🏗️ Proje Yapısı
+
+```
+src/
+├── pages/           # Sayfa bileşenleri
+├── hooks/           # Custom React hooks (useFinance)
+├── utils/           # Sabitler ve yardımcı fonksiyonlar
+├── App.jsx          # Ana uygulama bileşeni
+├── App.css          # Global stiller
+└── main.jsx         # Giriş noktası
+
+public/              # Sabit dosyalar
+tests/               # E2E testleri
+scripts/             # Yardımcı scriptler
+```
+
+## 📦 Derleme & Deployment
+
+### Geliştirmede
+```bash
+npm run dev          # HMR ile dev sunucusu
+npm run lint         # ESLint çalıştır
+```
+
+### Production
+```bash
+npm run build        # dist/ klasörüne derle
+npm run preview      # Derlenmiş sürümü göz at
+```
+
+### Vercel'de Deploy
+Bu proje otomatik olarak Vercel'e uyumludur. Repoyu bağla ve otomatik deployment aktif olacaktır.
+
+## 🔐 Veri Güvenliği
+
+- Veriler **localStorage** ile local olarak saklanır
+- Hiçbir bilgi sunuculara gönderilmez
+- Tamamen offline özellik hazır
+
+## 🧪 Test Etme
+
+### Unit Tests (Vitest)
+
+```bash
+# Tüm testleri çalıştır
+npm test
+
+# Watch mode (dosya değişirken otomatik çalış)
+npm test -- --watch
+
+# UI modunda testleri göster
+npm test:ui
+
+# Coverage raporu oluştur
+npm test:coverage
+```
+
+Test dosyaları:
+- `src/tests/ErrorBoundary.test.ts` - Hata yönetimi testleri
+- `src/tests/useFinance.test.ts` - Hook mantığı testleri
+- `src/tests/utils.test.ts` - Utility fonksiyonları testleri
+
+### E2E Tests (Selenium/Python)
+
+```bash
+# E2E testleri çalıştır (uçtan uca entegrasyon testleri)
+python tests/e2e/test_knapsack.py
+```
+
+## 📝 Lisans
+
+Bu proje açık kaynak kodludur. Detaylar için LICENSE dosyasını kontrol et.
+
+## 🤝 Katkıda Bulunma
+
+Pull request'leri memnuniyetle karşılarız! Önemli değişiklikler için lütfen önce issue açın.
+
+## 💬 İletişim
+
+Sorularınız veya önerileriniz varsa, bir issue açabilirsiniz.
+
+---
+
+**Vercel'de Canlı:** [knapsack-app.vercel.app](https://knapsack-app.vercel.app)
