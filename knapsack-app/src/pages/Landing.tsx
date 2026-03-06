@@ -21,6 +21,24 @@ interface GoogleJwtPayload {
   sub?: string;
 }
 
+function decodeGoogleJwtPayload(credential: string): GoogleJwtPayload | null {
+  try {
+    const [, payloadPart] = credential.split('.');
+    if (!payloadPart) return null;
+
+    // JWT payload is base64url encoded; normalize before decoding.
+    const normalized = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
+    const binary = window.atob(padded);
+    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+    const json = new TextDecoder().decode(bytes);
+
+    return JSON.parse(json) as GoogleJwtPayload;
+  } catch {
+    return null;
+  }
+}
+
 export default function Landing() {
   const navigate = useNavigate();
   const { auth, login, register, loginWithGoogle, isAuthenticated, error: authError } = useAuth();
@@ -31,6 +49,7 @@ export default function Landing() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState('');
+  const [googleReady, setGoogleReady] = useState(false);
 
   const error = localError || authError || '';
 
@@ -42,35 +61,65 @@ export default function Landing() {
 
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) return;
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
+
+    const initializeGoogle = () => {
       window.google?.accounts?.id?.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: (response: { credential: string }) => {
-          try {
-            const payload = JSON.parse(atob(response.credential.split('.')[1])) as GoogleJwtPayload;
-            if (!payload.sub) {
-              setLocalError('Google ile giriş başarısız.');
-              return;
-            }
-            loginWithGoogle({
-              name: payload.given_name || payload.name || payload.email || 'Google Kullanıcısı',
-              googleId: payload.sub,
-              email: payload.email,
-              picture: payload.picture,
-            });
-            navigate('/');
-          } catch {
+          if (!response?.credential) {
             setLocalError('Google ile giriş başarısız.');
+            return;
           }
+
+          const payload = decodeGoogleJwtPayload(response.credential);
+          if (!payload?.sub) {
+            setLocalError('Google ile giriş başarısız.');
+            return;
+          }
+
+          setLocalError('');
+          loginWithGoogle({
+            name: payload.given_name || payload.name || payload.email || 'Google Kullanıcısı',
+            googleId: payload.sub,
+            email: payload.email,
+            picture: payload.picture,
+          });
+          navigate('/');
         },
       });
+
+      setGoogleReady(Boolean(window.google?.accounts?.id));
     };
+
+    if (window.google?.accounts?.id) {
+      initializeGoogle();
+      return;
+    }
+
+    const existingScript = document.getElementById('google-gsi-client') as HTMLScriptElement | null;
+    if (existingScript) {
+      existingScript.addEventListener('load', initializeGoogle);
+      return () => {
+        existingScript.removeEventListener('load', initializeGoogle);
+      };
+    }
+
+    const script = document.createElement('script');
+    script.id = 'google-gsi-client';
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = initializeGoogle;
+    script.onerror = () => {
+      setGoogleReady(false);
+      setLocalError('Google servisine ulaşılamadı. Lütfen daha sonra tekrar deneyin.');
+    };
+
     document.head.appendChild(script);
-    return () => { document.head.removeChild(script); };
+
+    return () => {
+      script.removeEventListener('load', initializeGoogle);
+    };
   }, [loginWithGoogle, navigate]);
 
   const handleGoogleSignIn = () => {
@@ -78,7 +127,21 @@ export default function Landing() {
       setLocalError('Google Sign-In için VITE_GOOGLE_CLIENT_ID ortam değişkeni gerekli.');
       return;
     }
-    window.google?.accounts?.id?.prompt();
+
+    if (!googleReady || !window.google?.accounts?.id) {
+      setLocalError('Google giriş servisi henüz hazır değil.');
+      return;
+    }
+
+    setLocalError('');
+    window.google.accounts.id.prompt((notification: {
+      isNotDisplayed: () => boolean;
+      isSkippedMoment: () => boolean;
+    }) => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        setLocalError('Google giriş penceresi açılamadı. Tarayıcı izinlerini kontrol edin.');
+      }
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

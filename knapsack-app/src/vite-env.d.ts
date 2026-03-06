@@ -12,7 +12,10 @@ interface Window {
 					client_id: string;
 					callback: (response: GoogleCredentialResponse) => void;
 				}) => void;
-				prompt: () => void;
+				prompt: (callback?: (notification: {
+					isNotDisplayed: () => boolean;
+					isSkippedMoment: () => boolean;
+				}) => void) => void;
 			};
 		};
 	};
