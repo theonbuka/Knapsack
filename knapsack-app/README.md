@@ -161,14 +161,49 @@ npm run android:open
 ```
 
 Android Studio'da:
-- `android/app/build.gradle` içinde `versionCode` ve `versionName` değerlerini artır,
-- `Build > Generate Signed Bundle / APK` menüsünden `Android App Bundle (AAB)` üret.
+- `android/app/build.gradle` içinde `versionCode` ve `versionName` değerlerini artır.
+
+### 3.1) Upload key oluştur (zorunlu)
+
+Play Store'a yüklenecek `release` AAB imzalı olmalıdır.
+
+1. Keystore üret:
+
+```bash
+cd android
+keytool -genkeypair -v -keystore app/keystore/upload-keystore.jks -alias upload -keyalg RSA -keysize 2048 -validity 9125
+cd ..
+```
+
+2. Örnek dosyayı kopyala ve doldur:
+
+```bash
+cp android/keystore.properties.example android/keystore.properties
+```
+
+PowerShell alternatifi:
+
+```powershell
+Copy-Item android/keystore.properties.example android/keystore.properties
+```
+
+3. `android/keystore.properties` dosyasındaki alanları kendi değerlerinle güncelle.
+
+Not:
+- `android/keystore.properties` ve `*.jks` dosyaları `.gitignore` ile dışlanır.
+- Upload key'i güvenli yedekle; kaybedersen yeni sürüm yayınlayamazsın.
 
 Alternatif (Windows terminal):
 
 ```bash
-npm run android:aab   # AAB (Play Store için önerilen)
+npm run android:aab   # Signed AAB (keystore.properties varsa)
 npm run android:apk   # Release APK
+```
+
+Üretilen AAB yolu:
+
+```text
+android/app/build/outputs/bundle/release/app-release.aab
 ```
 
 ### 4) Play Console'a yükle
