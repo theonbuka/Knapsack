@@ -1,3 +1,5 @@
+import { SecureStorage } from './secureStorage';
+
 export const themeColors = {
   indigo:  { bg: 'bg-indigo-600', text: 'text-indigo-600', border: 'border-indigo-500/20', hex: '#6366f1' },
   rose:    { bg: 'bg-rose-500', text: 'text-rose-500', border: 'border-rose-500/20', hex: '#f43f5e' },
@@ -45,8 +47,22 @@ export const PRESET_COLORS = [
 export const customDB = {
   get: (k, def) => {
     try {
-      const x = localStorage.getItem(k);
-      return x ? JSON.parse(x) : def;
+      const raw = localStorage.getItem(k);
+      if (!raw) return def;
+
+      // Legacy migration: old records were plain JSON; re-save them encrypted.
+      try {
+        const parsed = JSON.parse(raw);
+        try {
+          SecureStorage.setSecure(k, parsed);
+        } catch {
+          // Keep working with parsed data even if migration write fails.
+        }
+        return parsed;
+      } catch {
+        const decrypted = SecureStorage.getSecure(k);
+        return decrypted ?? def;
+      }
     } catch (err) {
       console.error('customDB.get error:', err);
       return def;
@@ -54,9 +70,15 @@ export const customDB = {
   },
   set: (k, val) => {
     try {
-      localStorage.setItem(k, JSON.stringify(val));
+      SecureStorage.setSecure(k, val);
     } catch (err) {
       console.error('customDB.set error:', err);
+      // Last-resort fallback keeps app usable if encryption write fails.
+      try {
+        localStorage.setItem(k, JSON.stringify(val));
+      } catch (fallbackErr) {
+        console.error('customDB.set fallback error:', fallbackErr);
+      }
     }
   },
 };

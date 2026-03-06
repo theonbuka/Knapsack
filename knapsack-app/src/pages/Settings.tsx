@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { themeColors, customDB, PRESET_EMOJIS, PRESET_COLORS } from '../utils/constants';
 import { useAuth } from '../contexts/AuthContext';
 
-const CURRENCIES = ['₺', '$', '€', '£'];
+const CURRENCIES = ['₺', '$', '€'];
 
 function EmojiPicker({ value, onChange, isDark }) {
   return (
@@ -189,7 +189,7 @@ function Settings({ isDark, color, prefs, savePrefs, cats = [], saveCats }) {
   };
 
   const handleClearData = () => {
-    ['knapsack_w','knapsack_t','knapsack_p','knapsack_exp','knapsack_theme','knapsack_auth','knapsack_cats'].forEach(k => localStorage.removeItem(k));
+    ['knapsack_w','knapsack_t','knapsack_p','knapsack_exp','knapsack_theme','knapsack_auth','knapsack_cats','knapsack_local_secret_key'].forEach(k => localStorage.removeItem(k));
     logout(true);
     navigate('/landing');
   };

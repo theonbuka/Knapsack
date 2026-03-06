@@ -1,41 +1,51 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { sanitizeInput, validateAndSanitize, LoginSchema } from '../utils/validation';
+import {
+  convertFromTRY,
+  convertToTRY,
+  normalizeCurrencySymbol,
+  formatFromTRY,
+} from '../utils/currency';
 
-describe('Constants & Utilities', () => {
-  beforeEach(() => {
-    localStorage.clear();
+describe('validation utilities', () => {
+  it('sanitizes unsafe characters while preserving content', () => {
+    const input = "  <script>alert('x')</script>  ";
+    const output = sanitizeInput(input);
+
+    expect(output).not.toContain('<');
+    expect(output).not.toContain('>');
+    expect(output).not.toContain("'");
+    expect(output).toContain('scriptalert(x)/script');
   });
 
-  it('should have currency symbols defined', () => {
-    const currencies = {
-      '₺': 'TRY',
-      '$': 'USD',
-      '€': 'EUR',
-    };
-    expect(currencies['₺']).toBe('TRY');
+  it('validates login payload and keeps password untouched', () => {
+    const parsed = validateAndSanitize<{ email: string; password: string }>(LoginSchema, {
+      email: '  User@Test.com  ',
+      password: 'secret123',
+    });
+
+    expect(parsed.email).toBe('User@Test.com');
+    expect(parsed.password).toBe('secret123');
+  });
+});
+
+describe('currency utilities', () => {
+  it('normalizes supported and unsupported symbols', () => {
+    expect(normalizeCurrencySymbol('USD')).toBe('$');
+    expect(normalizeCurrencySymbol('EUR')).toBe('€');
+    expect(normalizeCurrencySymbol('£')).toBe('₺');
   });
 
-  it('should validate transaction amounts', () => {
-    const isValidAmount = (amount: string | number) => {
-      const num = parseFloat(String(amount));
-      return !isNaN(num) && num > 0;
-    };
-    expect(isValidAmount(100)).toBe(true);
-    expect(isValidAmount(-50)).toBe(false);
-    expect(isValidAmount('abc')).toBe(false);
+  it('converts between TRY and USD/EUR with provided rates', () => {
+    expect(convertToTRY(10, 'USD', { USD: 40 })).toBe(400);
+    expect(convertToTRY(10, 'EUR', { EUR: 50 })).toBe(500);
+
+    expect(convertFromTRY(400, '$', { USD: 40 })).toBe(10);
+    expect(convertFromTRY(500, '€', { EUR: 50 })).toBe(10);
   });
 
-  it('should format currency properly', () => {
-    const formatCurrency = (amount: number, currency: string) => {
-      return `${currency} ${amount.toFixed(2)}`;
-    };
-    expect(formatCurrency(1234.5, '₺')).toBe('₺ 1234.50');
-  });
-
-  it('should handle localStorage safely', () => {
-    const testKey = 'test_key';
-    const testValue = { data: 'test' };
-    localStorage.setItem(testKey, JSON.stringify(testValue));
-    const retrieved = JSON.parse(localStorage.getItem(testKey) || '{}');
-    expect(retrieved.data).toBe('test');
+  it('formats TRY amounts into selected display currency', () => {
+    const formatted = formatFromTRY(332, '$', { USD: 33.2 }, 'tr-TR', 1);
+    expect(formatted).toBe('$10');
   });
 });

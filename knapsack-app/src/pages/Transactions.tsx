@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowUpRight, ArrowDownLeft, Search, Trash2, Edit3, X, Check, Filter } from 'lucide-react';
 import { customDB } from '../utils/constants';
+import { convertFromTRY, normalizeCurrencySymbol } from '../utils/currency';
 
 const MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 
@@ -110,8 +111,9 @@ function EditModal({ tx, cats, isDark, color, wallets, onSave, onClose }) {
   );
 }
 
-function Transactions({ transactions = [], isDark, color, refreshData, cats = [], wallets = [], updateTransaction }) {
+function Transactions({ transactions = [], isDark, color, prefs, liveRates, refreshData, cats = [], wallets = [], updateTransaction }) {
   const catMap = useMemo(() => Object.fromEntries(cats.map(c => [c.id, c])), [cats]);
+  const cur = normalizeCurrencySymbol(prefs?.currency);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [monthFilter, setMonth] = useState('all');
@@ -176,7 +178,10 @@ function Transactions({ transactions = [], isDark, color, refreshData, cats = []
           <div key={label} className={`p-4 sm:p-5 rounded-[1.8rem] border text-center ${cardBg}`}>
             <p className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest mb-1 ${sub}`}>{label}</p>
             <p className={`font-num text-base sm:text-xl font-bold ${cls}`}>
-              {value >= 0 ? '+' : ''}{Math.abs(value).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+              {value >= 0 ? '+' : ''}
+              {convertFromTRY(Math.abs(value), cur, liveRates).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+              {' '}
+              {cur}
             </p>
           </div>
         ))}
@@ -263,7 +268,10 @@ function Transactions({ transactions = [], isDark, color, refreshData, cats = []
                 <div className="flex items-center gap-1.5 flex-shrink-0 pl-2">
                   <div className="text-right">
                     <p className={`font-num text-base sm:text-lg font-bold ${t.type === 'income' ? 'text-emerald-500' : txt}`}>
-                      {t.type === 'income' ? '+' : '-'}{parseFloat(t.amount || 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+                      {t.type === 'income' ? '+' : '-'}
+                      {convertFromTRY(parseFloat(t.amount || 0), cur, liveRates).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+                      {' '}
+                      {cur}
                     </p>
                     {t.currency && t.currency !== '₺' && <p className={`text-[9px] mt-0.5 ${sub}`}>{t.currency}</p>}
                   </div>

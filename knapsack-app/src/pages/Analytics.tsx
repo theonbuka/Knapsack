@@ -1,14 +1,15 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Activity, AlertCircle, BarChart2 } from 'lucide-react';
+import { convertFromTRY, normalizeCurrencySymbol } from '../utils/currency';
 
 const stagger = {
   container: { hidden: {}, show: { transition: { staggerChildren: 0.07 } } },
   item: { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } } },
 };
 
-function Analytics({ transactions = [], isDark, color, prefs, cats = [] }) {
-  const cur = prefs?.currency || '₺';
+function Analytics({ transactions = [], isDark, color, prefs, liveRates, cats = [] }) {
+  const cur = normalizeCurrencySymbol(prefs?.currency);
   const txt = isDark ? 'text-white' : 'text-slate-900';
   const sub = isDark ? 'text-white/60' : 'text-slate-600';
   const cardBg = isDark ? 'bg-white/[0.035] border-white/[0.08]' : 'bg-white border-slate-200 shadow-lg shadow-slate-200/50';
@@ -56,9 +57,9 @@ function Analytics({ transactions = [], isDark, color, prefs, cats = [] }) {
   }, [transactions, cats]);
 
   const kpis = [
-    { label: 'Bu Ay Gider', value: stats.totalExpense, cls: 'text-rose-500', fmt: v => `${cur}${v.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}`, icon: <TrendingDown size={14} className="text-rose-500" /> },
-    { label: 'Bu Ay Gelir', value: stats.totalIncome, cls: 'text-emerald-500', fmt: v => `${cur}${v.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}`, icon: <TrendingUp size={14} className="text-emerald-500" /> },
-    { label: 'Birikim', value: stats.savings, cls: stats.savings >= 0 ? 'text-emerald-500' : 'text-rose-500', fmt: v => `${v >= 0 ? '+' : ''}${cur}${Math.abs(v).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}`, icon: null },
+    { label: 'Bu Ay Gider', value: stats.totalExpense, cls: 'text-rose-500', fmt: v => `${cur}${convertFromTRY(v, cur, liveRates).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}`, icon: <TrendingDown size={14} className="text-rose-500" /> },
+    { label: 'Bu Ay Gelir', value: stats.totalIncome, cls: 'text-emerald-500', fmt: v => `${cur}${convertFromTRY(v, cur, liveRates).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}`, icon: <TrendingUp size={14} className="text-emerald-500" /> },
+    { label: 'Birikim', value: stats.savings, cls: stats.savings >= 0 ? 'text-emerald-500' : 'text-rose-500', fmt: v => `${v >= 0 ? '+' : ''}${cur}${convertFromTRY(Math.abs(v), cur, liveRates).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}`, icon: null },
     { label: 'Geçen Aya Göre', value: stats.changePct, cls: stats.changePct > 0 ? 'text-rose-500' : 'text-emerald-500', fmt: v => `${v > 0 ? '+' : ''}%${Math.abs(v).toFixed(1)}`, icon: null },
   ];
 
@@ -119,8 +120,8 @@ function Analytics({ transactions = [], isDark, color, prefs, cats = [] }) {
             />
           </div>
           <div className="flex justify-between mt-2">
-            <span className={`text-[10px] ${sub}`}>Gider: {cur}{stats.totalExpense.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</span>
-            <span className={`text-[10px] ${sub}`}>Gelir: {cur}{stats.totalIncome.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</span>
+            <span className={`text-[10px] ${sub}`}>Gider: {cur}{convertFromTRY(stats.totalExpense, cur, liveRates).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</span>
+            <span className={`text-[10px] ${sub}`}>Gelir: {cur}{convertFromTRY(stats.totalIncome, cur, liveRates).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</span>
           </div>
         </motion.div>
       )}
@@ -198,8 +199,8 @@ function Analytics({ transactions = [], isDark, color, prefs, cats = [] }) {
                       {overLimit && <AlertCircle size={12} className="text-rose-500 animate-pulse" />}
                     </div>
                     <div className="text-right">
-                      <span className={`text-sm font-black ${txt}`}>{cur}{cat.spent.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</span>
-                      {limit > 0 && <span className={`text-[10px] ml-1 ${sub}`}>/ {cur}{limit.toLocaleString()}</span>}
+                      <span className={`text-sm font-black ${txt}`}>{cur}{convertFromTRY(cat.spent, cur, liveRates).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</span>
+                      {limit > 0 && <span className={`text-[10px] ml-1 ${sub}`}>/ {cur}{convertFromTRY(limit, cur, liveRates).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</span>}
                     </div>
                   </div>
                   {limit > 0 && (

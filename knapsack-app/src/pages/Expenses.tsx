@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, Trash2, CheckCircle, Circle, Zap, CreditCard, Home as HomeIcon, Bell, Edit3 } from 'lucide-react';
 import { EXPENSE_TYPES } from '../utils/constants';
+import { convertFromTRY, convertToTRY, normalizeCurrencySymbol } from '../utils/currency';
 
 /* ─── streaming / known services ─────────────────────────────────────── */
 const KNOWN_SERVICES = [
@@ -44,6 +45,32 @@ const TYPE_META = {
 };
 
 const EMPTY_FORM = { type: 'bill', name: '', amount: '', currency: '₺', dueDay: 1, serviceKey: '' };
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function clampDueDay(year, month, dueDay) {
+  const maxDay = new Date(year, month + 1, 0).getDate();
+  const normalized = Math.max(1, parseInt(dueDay, 10) || 1);
+  return Math.min(normalized, maxDay);
+}
+
+function buildDueDate(year, month, dueDay) {
+  return new Date(year, month, clampDueDay(year, month, dueDay));
+}
+
+function getCurrentMonthDueDate(dueDay, referenceDate) {
+  return buildDueDate(referenceDate.getFullYear(), referenceDate.getMonth(), dueDay);
+}
+
+function getNextDueDate(dueDay, referenceDate) {
+  const currentMonthDue = getCurrentMonthDueDate(dueDay, referenceDate);
+  if (currentMonthDue.getTime() >= referenceDate.getTime()) {
+    return currentMonthDue;
+  }
+
+  const year = referenceDate.getMonth() === 11 ? referenceDate.getFullYear() + 1 : referenceDate.getFullYear();
+  const month = referenceDate.getMonth() === 11 ? 0 : referenceDate.getMonth() + 1;
+  return buildDueDate(year, month, dueDay);
+}
 
 /* ─── ServiceBadge ──────────────────────────────────────────────────── */
 function ServiceBadge({ name, size = 'md' }) {
@@ -59,12 +86,13 @@ function ServiceBadge({ name, size = 'md' }) {
 }
 
 /* ─── Expenses page ──────────────────────────────────────────────────── */
-function Expenses({ expenses = [], isDark, color, prefs, addExpense, removeExpense, toggleExpensePaid, updateExpense }) {
+function Expenses({ expenses = [], isDark, color, prefs, liveRates, addExpense, removeExpense, toggleExpensePaid, updateExpense }) {
   const [tab, setTab] = useState('all');
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [svcSearch, setSvcSearch] = useState('');
+  const displayCurrency = normalizeCurrencySymbol(prefs?.currency);
 
   const currentMonth = new Date().toISOString().slice(0, 7);
 
@@ -78,11 +106,11 @@ function Expenses({ expenses = [], isDark, color, prefs, addExpense, removeExpen
   }, [expenses, tab]);
 
   const totals = useMemo(() => {
-    const monthly = expenses.reduce((s, e) => s + parseFloat(e.amount || 0), 0);
+    const monthly = expenses.reduce((s, e) => s + convertToTRY(e.amount || 0, e.currency, liveRates), 0);
     const paid = expenses.filter(e => (e.paidMonths || []).includes(currentMonth))
-                            .reduce((s, e) => s + parseFloat(e.amount || 0), 0);
+                            .reduce((s, e) => s + convertToTRY(e.amount || 0, e.currency, liveRates), 0);
     return { monthly, paid, unpaid: monthly - paid };
-  }, [expenses, currentMonth]);
+  }, [expenses, currentMonth, liveRates]);
 
   const txt = isDark ? 'text-white' : 'text-slate-900';
   const sub = isDark ? 'text-white/40' : 'text-slate-400';
@@ -112,9 +140,13 @@ function Expenses({ expenses = [], isDark, color, prefs, addExpense, removeExpen
   const renderExpenseRow = (item, type) => {
     const meta = TYPE_META[type];
     const isPaid = (item.paidMonths || []).includes(currentMonth);
-    const today = new Date().getDate();
-    const daysLeft = item.dueDay - today;
-    const isUrgent = !isPaid && daysLeft <= 3 && daysLeft >= -1;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const currentDueDate = getCurrentMonthDueDate(item.dueDay, today);
+    const nextDueDate = getNextDueDate(item.dueDay, today);
+    const daysLeft = Math.ceil((nextDueDate.getTime() - today.getTime()) / DAY_MS);
+    const isOverdue = !isPaid && currentDueDate.getTime() < today.getTime();
+    const isUrgent = !isPaid && (isOverdue || daysLeft <= 3);
     const svc = KNOWN_SERVICES.find(s => item.name?.toLowerCase().includes(s.name.toLowerCase()));
 
     return (
@@ -141,7 +173,7 @@ function Expenses({ expenses = [], isDark, color, prefs, addExpense, removeExpen
             <p className={`font-black text-sm truncate ${isPaid ? 'line-through opacity-50' : ''} ${txt}`}>{item.name}</p>
             {isUrgent && !isPaid && (
               <span className="text-[9px] font-black uppercase tracking-widest bg-rose-500/10 text-rose-400 px-2 py-0.5 rounded-full flex-shrink-0">
-                {daysLeft <= 0 ? 'Bugün!' : `${daysLeft} gün`}
+                {isOverdue ? 'Gecikti' : daysLeft === 0 ? 'Bugün!' : `${daysLeft} gün`}
               </span>
             )}
           </div>
@@ -216,7 +248,7 @@ function Expenses({ expenses = [], isDark, color, prefs, addExpense, removeExpen
           <div key={label} className={`p-5 rounded-[2rem] border text-center ${cardBg}`}>
             <p className={`text-[10px] font-black uppercase tracking-widest opacity-30 mb-2 ${txt}`}>{label}</p>
             <p className={`text-xl font-black tracking-tighter ${cls}`}>
-              {prefs?.currency}{value.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+              {displayCurrency}{convertFromTRY(value, displayCurrency, liveRates).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
             </p>
           </div>
         ))}

@@ -1,7 +1,46 @@
 import CryptoJS from 'crypto-js';
 
-// Secret key for encryption (in production, use environment variables)
-const SECRET_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'knapsack_secure_2026';
+const LOCAL_SECRET_KEY_NAME = 'knapsack_local_secret_key';
+
+function generateLocalSecretKey(): string {
+  const bytes = new Uint8Array(32);
+
+  if (typeof window !== 'undefined' && window.crypto?.getRandomValues) {
+    window.crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < bytes.length; i += 1) {
+      bytes[i] = Math.floor(Math.random() * 256);
+    }
+  }
+
+  return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function resolveSecretKey(): string {
+  const envKey = import.meta.env.VITE_ENCRYPTION_KEY?.trim();
+  if (envKey) {
+    return envKey;
+  }
+
+  if (typeof window === 'undefined') {
+    return 'knapsack_runtime_fallback_key';
+  }
+
+  try {
+    const existing = window.localStorage.getItem(LOCAL_SECRET_KEY_NAME);
+    if (existing && existing.length >= 32) {
+      return existing;
+    }
+
+    const generated = generateLocalSecretKey();
+    window.localStorage.setItem(LOCAL_SECRET_KEY_NAME, generated);
+    return generated;
+  } catch {
+    return generateLocalSecretKey();
+  }
+}
+
+const SECRET_KEY = resolveSecretKey();
 
 export const Encryption = {
   /**

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Activity, TrendingUp, PieChart, Zap, ChevronRight, AlertCircle, Target } from 'lucide-react';
+import { convertFromTRY, normalizeCurrencySymbol } from '../utils/currency';
 
 const stagger = {
   container: { hidden: {}, show: { transition: { staggerChildren: 0.055 } } },
@@ -38,10 +39,24 @@ export default function Home({ transactions = [], wallets = [], isDark, prefs, c
     const daysPassed = now.getDate() || 1;
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const monthlyExpense = transactions
-      .filter(t => t.type === 'expense' && new Date(t.created).getMonth() === now.getMonth())
+      .filter(t => {
+        const createdAt = new Date(t.created);
+        return (
+          t.type === 'expense' &&
+          createdAt.getMonth() === now.getMonth() &&
+          createdAt.getFullYear() === now.getFullYear()
+        );
+      })
       .reduce((s, t) => s + parseFloat(t.amount || 0), 0);
     const monthlyIncome = transactions
-      .filter(t => t.type === 'income' && new Date(t.created).getMonth() === now.getMonth())
+      .filter(t => {
+        const createdAt = new Date(t.created);
+        return (
+          t.type === 'income' &&
+          createdAt.getMonth() === now.getMonth() &&
+          createdAt.getFullYear() === now.getFullYear()
+        );
+      })
       .reduce((s, t) => s + parseFloat(t.amount || 0), 0);
 
     const predictedEnd = (monthlyExpense / daysPassed) * daysInMonth;
@@ -63,7 +78,7 @@ export default function Home({ transactions = [], wallets = [], isDark, prefs, c
   const dovizPct = (metrics.distribution.Döviz / total) * 100;
   const catMap = useMemo(() => Object.fromEntries(cats.map(c => [c.id, c])), [cats]);
 
-  const cur = prefs?.currency || '₺';
+  const cur = normalizeCurrencySymbol(prefs?.currency);
   const txt = isDark ? 'text-knapsack-dark-text' : 'text-knapsack-light-text';
   const txtSec = isDark ? 'text-knapsack-dark-text-secondary' : 'text-knapsack-light-text-secondary';
   const txtTer = isDark ? 'text-knapsack-dark-text-tertiary' : 'text-knapsack-light-text-tertiary';
@@ -71,6 +86,12 @@ export default function Home({ transactions = [], wallets = [], isDark, prefs, c
     ? 'bg-white/[0.04] border-white/[0.08] backdrop-blur-sm'
     : 'bg-white/95 border-slate-200/50 shadow-sm';
   const netWorth = metrics.totalAssets - metrics.totalDebt;
+  const netWorthDisplay = convertFromTRY(Math.abs(netWorth), cur, liveRates);
+  const totalAssetsDisplay = convertFromTRY(metrics.totalAssets, cur, liveRates);
+  const totalDebtDisplay = convertFromTRY(metrics.totalDebt, cur, liveRates);
+  const predictedEndDisplay = convertFromTRY(metrics.predictedEnd, cur, liveRates);
+  const savingsDisplay = convertFromTRY(metrics.savings, cur, liveRates);
+  const savingsGoalDisplay = convertFromTRY(metrics.savingsGoal, cur, liveRates);
 
   return (
     <motion.div
@@ -131,14 +152,14 @@ export default function Home({ transactions = [], wallets = [], isDark, prefs, c
               Toplam Net Değer
             </p>
             <h2 className={`font-num text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-none mb-8 ${netWorth < 0 ? 'text-rose-500' : txt}`}>
-              {cur}{Math.abs(netWorth).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+              {cur}{netWorthDisplay.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
             </h2>
             <div className={`h-px mb-8 ${isDark ? 'bg-white/[0.06]' : 'bg-black/[0.06]'}`} />
             <div className="flex gap-8 sm:gap-12">
               <div>
                 <p className={`text-[10px] font-semibold uppercase tracking-widest mb-1.5 ${txtSec}`}>Varlıklar</p>
                 <p className="font-num text-xl sm:text-2xl font-bold text-emerald-500">
-                  +{cur}{metrics.totalAssets.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+                  +{cur}{totalAssetsDisplay.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
                 </p>
               </div>
               {metrics.totalDebt > 0 && (
@@ -147,7 +168,7 @@ export default function Home({ transactions = [], wallets = [], isDark, prefs, c
                   <div>
                     <p className={`text-[10px] font-semibold uppercase tracking-widest mb-1.5 ${txtSec}`}>Borçlar</p>
                     <p className="font-num text-xl sm:text-2xl font-bold text-rose-500">
-                      -{cur}{metrics.totalDebt.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+                      -{cur}{totalDebtDisplay.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
                     </p>
                   </div>
                 </>
@@ -217,7 +238,7 @@ export default function Home({ transactions = [], wallets = [], isDark, prefs, c
             Aylık Tahmini Gider
           </p>
           <p className={`font-num text-lg font-bold ${txt}`}>
-            {cur}{metrics.predictedEnd.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+            {cur}{predictedEndDisplay.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
           </p>
         </div>
         <p className={`text-xs font-medium max-w-[40%] text-right leading-snug ${txtSec} hidden sm:block`}>
@@ -240,9 +261,9 @@ export default function Home({ transactions = [], wallets = [], isDark, prefs, c
             </div>
             <div className="text-right">
               <span className={`font-num text-sm font-bold ${metrics.savings >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                {metrics.savings >= 0 ? '+' : ''}{cur}{metrics.savings.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+                {metrics.savings >= 0 ? '+' : ''}{cur}{Math.abs(savingsDisplay).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
               </span>
-              <span className={`text-xs ml-1 ${txtSec}`}>/ {cur}{metrics.savingsGoal.toLocaleString()}</span>
+              <span className={`text-xs ml-1 ${txtSec}`}>/ {cur}{savingsGoalDisplay.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</span>
             </div>
           </div>
           <div className={`h-2 rounded-full overflow-hidden ${isDark ? 'bg-white/[0.05]' : 'bg-black/[0.05]'}`}>
@@ -337,7 +358,7 @@ export default function Home({ transactions = [], wallets = [], isDark, prefs, c
                 <div className="text-right flex-shrink-0 pl-3">
                   <p className={`font-num text-base sm:text-lg font-extrabold ${t.type === 'expense' ? 'text-rose-500' : 'text-emerald-500'}`}>
                     {t.type === 'expense' ? '−' : '+'}
-                    {parseFloat(t.amount || 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+                    {convertFromTRY(parseFloat(t.amount || 0), cur, liveRates).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
                     <span className={`text-[10px] font-semibold ml-0.5 ${txtSec}`}>{cur}</span>
                   </p>
                   {isOverLimit && (

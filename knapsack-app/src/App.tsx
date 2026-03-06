@@ -28,7 +28,19 @@ const EMPTY_FORM = {
 // end EMPTY_FORM
 
 /* ─── Quick Add Modal ─────────────────────────────────────── */
-function QuickAddModal({ isOpen, onClose, form, setForm, handleSubmit, isDark, activeColor, cats, wallets }) {
+function QuickAddModal({
+  isOpen,
+  onClose,
+  form,
+  setForm,
+  handleSubmit,
+  isDark,
+  activeColor,
+  cats,
+  wallets,
+  submitError,
+  onClearError,
+}) {
   if (!isOpen) return null;
 
   const inputCls = isDark
@@ -96,7 +108,10 @@ function QuickAddModal({ isOpen, onClose, form, setForm, handleSubmit, isDark, a
               </span>
               <input
                 type="number" placeholder="0" required value={form.amount}
-                onChange={e => setForm(p => ({ ...p, amount: e.target.value }))}
+                onChange={e => {
+                  if (submitError) onClearError();
+                  setForm(p => ({ ...p, amount: e.target.value }));
+                }}
                 className="font-num bg-transparent text-7xl sm:text-8xl font-extrabold outline-none w-[200px] text-center tracking-tight"
                 style={{ color: form.type === 'income' ? '#34d399' : '#f87171' }}
                 autoFocus
@@ -106,7 +121,10 @@ function QuickAddModal({ isOpen, onClose, form, setForm, handleSubmit, isDark, a
               {['₺', 'USD', 'EUR'].map(c => (
                 <button
                   key={c} type="button"
-                  onClick={() => setForm(p => ({ ...p, currency: c }))}
+                  onClick={() => {
+                    if (submitError) onClearError();
+                    setForm(p => ({ ...p, currency: c }));
+                  }}
                   className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
                     form.currency === c
                       ? `${activeColor.bg} text-white border-transparent`
@@ -125,12 +143,19 @@ function QuickAddModal({ isOpen, onClose, form, setForm, handleSubmit, isDark, a
           <form onSubmit={handleSubmit} className="space-y-3">
             <input
               type="text" placeholder="Başlık" value={form.title}
-              onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+              onChange={e => {
+                if (submitError) onClearError();
+                setForm(p => ({ ...p, title: e.target.value }));
+              }}
+              required
               className={`w-full px-4 py-3 rounded-2xl border text-sm font-medium outline-none transition-all ${inputCls}`}
             />
             <input
               type="text" placeholder="Not ekle (opsiyonel)" value={form.note || ''}
-              onChange={e => setForm(p => ({ ...p, note: e.target.value }))}
+              onChange={e => {
+                if (submitError) onClearError();
+                setForm(p => ({ ...p, note: e.target.value }));
+              }}
               className={`w-full px-4 py-2.5 rounded-2xl border text-sm outline-none transition-all ${inputCls} opacity-60 focus:opacity-100`}
             />
 
@@ -141,7 +166,10 @@ function QuickAddModal({ isOpen, onClose, form, setForm, handleSubmit, isDark, a
                 {cats.map(cat => (
                   <button
                     key={cat.id} type="button"
-                    onClick={() => setForm(p => ({ ...p, categoryId: cat.id }))}
+                    onClick={() => {
+                      if (submitError) onClearError();
+                      setForm(p => ({ ...p, categoryId: cat.id }));
+                    }}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border flex-shrink-0 transition-all ${
                       form.categoryId === cat.id
                         ? 'border-transparent text-white shadow-sm'
@@ -163,7 +191,10 @@ function QuickAddModal({ isOpen, onClose, form, setForm, handleSubmit, isDark, a
                 <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
                   <button
                     type="button"
-                    onClick={() => setForm(p => ({ ...p, walletId: '' }))}
+                    onClick={() => {
+                      if (submitError) onClearError();
+                      setForm(p => ({ ...p, walletId: '' }));
+                    }}
                     className={`px-3 py-2 rounded-xl text-xs font-bold border flex-shrink-0 transition-all ${
                       !form.walletId
                         ? `${activeColor.bg} text-white border-transparent`
@@ -175,7 +206,10 @@ function QuickAddModal({ isOpen, onClose, form, setForm, handleSubmit, isDark, a
                   {wallets.map((w, i) => (
                     <button
                       key={i} type="button"
-                      onClick={() => setForm(p => ({ ...p, walletId: w.name }))}
+                      onClick={() => {
+                        if (submitError) onClearError();
+                        setForm(p => ({ ...p, walletId: w.name }));
+                      }}
                       className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border flex-shrink-0 transition-all ${
                         form.walletId === w.name
                           ? (w.isDebt ? 'bg-rose-500 text-white border-transparent' : `${activeColor.bg} text-white border-transparent`)
@@ -187,6 +221,12 @@ function QuickAddModal({ isOpen, onClose, form, setForm, handleSubmit, isDark, a
                   ))}
                 </div>
               </div>
+            )}
+
+            {submitError && (
+              <p className="text-xs font-semibold text-rose-400" role="alert">
+                {submitError}
+              </p>
             )}
 
             <button
@@ -218,6 +258,7 @@ function App() {
     return s !== null ? JSON.parse(s) : true;
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [quickAddError, setQuickAddError] = useState('');
   const [form, setForm] = useState(EMPTY_FORM);
 
   const activeColor = themeColors[data.prefs?.themeColor] || themeColors.indigo;
@@ -242,10 +283,19 @@ function App() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.amount) return;
-    addTransaction(form);
-    setForm(EMPTY_FORM);
-    setIsModalOpen(false);
+    if (!form.amount) {
+      setQuickAddError('Lutfen tutar giriniz.');
+      return;
+    }
+
+    try {
+      addTransaction(form);
+      setQuickAddError('');
+      setForm(EMPTY_FORM);
+      setIsModalOpen(false);
+    } catch (err) {
+      setQuickAddError(err instanceof Error ? err.message : 'Islem kaydedilemedi.');
+    }
   };
 
   if (loc.pathname === '/landing') {
@@ -318,11 +368,11 @@ function App() {
           }>
             <Routes location={loc} key={loc.pathname}>
               <Route path="/" element={<AuthGuard><Home transactions={data.trans} wallets={data.wallets} isDark={isDark} prefs={data.prefs} color={activeColor} liveRates={liveRates} cats={cats} /></AuthGuard>} />
-              <Route path="/transactions" element={<AuthGuard><Transactions transactions={data.trans} isDark={isDark} color={activeColor} cats={cats} wallets={data.wallets} refreshData={refresh} updateTransaction={updateTransaction} /></AuthGuard>} />
-              <Route path="/analytics" element={<AuthGuard><Analytics transactions={data.trans} isDark={isDark} color={activeColor} prefs={data.prefs} cats={cats} /></AuthGuard>} />
-              <Route path="/assets" element={<AuthGuard><Assets wallets={data.wallets} refreshData={refresh} isDark={isDark} color={activeColor} liveRates={liveRates} /></AuthGuard>} />
-              <Route path="/expenses" element={<AuthGuard><Expenses expenses={data.expenses} isDark={isDark} color={activeColor} prefs={data.prefs} addExpense={addExpense} removeExpense={removeExpense} toggleExpensePaid={toggleExpensePaid} updateExpense={updateExpense} /></AuthGuard>} />
-              <Route path="/calendar" element={<AuthGuard><Calendar transactions={data.trans} isDark={isDark} color={activeColor} prefs={data.prefs} cats={cats} /></AuthGuard>} />
+              <Route path="/transactions" element={<AuthGuard><Transactions transactions={data.trans} isDark={isDark} color={activeColor} prefs={data.prefs} liveRates={liveRates} cats={cats} wallets={data.wallets} refreshData={refresh} updateTransaction={updateTransaction} /></AuthGuard>} />
+              <Route path="/analytics" element={<AuthGuard><Analytics transactions={data.trans} isDark={isDark} color={activeColor} prefs={data.prefs} liveRates={liveRates} cats={cats} /></AuthGuard>} />
+              <Route path="/assets" element={<AuthGuard><Assets wallets={data.wallets} refreshData={refresh} isDark={isDark} color={activeColor} liveRates={liveRates} prefs={data.prefs} /></AuthGuard>} />
+              <Route path="/expenses" element={<AuthGuard><Expenses expenses={data.expenses} isDark={isDark} color={activeColor} prefs={data.prefs} liveRates={liveRates} addExpense={addExpense} removeExpense={removeExpense} toggleExpensePaid={toggleExpensePaid} updateExpense={updateExpense} /></AuthGuard>} />
+              <Route path="/calendar" element={<AuthGuard><Calendar transactions={data.trans} isDark={isDark} color={activeColor} prefs={data.prefs} liveRates={liveRates} cats={cats} /></AuthGuard>} />
               <Route path="/settings" element={<AuthGuard><Settings isDark={isDark} color={activeColor} prefs={data.prefs} savePrefs={savePrefs} cats={cats} saveCats={saveCats} /></AuthGuard>} />
               <Route path="*" element={<Navigate to={isAuthenticated ? '/' : '/landing'} replace />} />
             </Routes>
@@ -332,7 +382,10 @@ function App() {
 
       {/* CIRCULAR FAB */}
       <button
-        onClick={() => setIsModalOpen(true)}
+        onClick={() => {
+          setQuickAddError('');
+          setIsModalOpen(true);
+        }}
         className={`fixed bottom-[5.5rem] right-5 z-[250] w-[52px] h-[52px] rounded-full flex items-center justify-center ${activeColor.bg} text-white active:scale-90 transition-transform`}
         style={{ boxShadow: `0 6px 28px ${activeColor.hex}50` }}
         aria-label="Create new transaction"
@@ -379,11 +432,17 @@ function App() {
         {isModalOpen && (
           <QuickAddModal
             isOpen={isModalOpen}
-            onClose={() => { setIsModalOpen(false); setForm(EMPTY_FORM); }}
+            onClose={() => {
+              setIsModalOpen(false);
+              setQuickAddError('');
+              setForm(EMPTY_FORM);
+            }}
             form={form} setForm={setForm}
             handleSubmit={handleSubmit}
             isDark={isDark} activeColor={activeColor}
             cats={cats} wallets={data.wallets}
+            submitError={quickAddError}
+            onClearError={() => setQuickAddError('')}
           />
         )}
       </AnimatePresence>

@@ -5,6 +5,7 @@ import {
   CreditCard, Edit3, Calculator, AlertTriangle, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { customDB, UNIT_LABELS } from '../utils/constants';
+import { convertFromTRY, normalizeCurrencySymbol } from '../utils/currency';
 
 /* ─── helpers ─────────────────────────────────────────────────────────── */
 // PMT — standart kredi taksit formülü
@@ -422,8 +423,9 @@ function AssetModal({ isDark, color, inputCls, onClose, onSubmit }) {
 }
 
 /* ─── Assets page ──────────────────────────────────────────────────────── */
-function Assets({ wallets = [], refreshData, isDark, color, liveRates }) {
+function Assets({ wallets = [], refreshData, isDark, color, liveRates, prefs }) {
   const [showAdd, setShowAdd] = useState(null); // null | 'asset' | 'cc' | 'loan'
+  const cur = normalizeCurrencySymbol(prefs?.currency);
 
   const rates = liveRates || { USD: 33, EUR: 35, GOLD: 3185 };
 
@@ -441,6 +443,9 @@ function Assets({ wallets = [], refreshData, isDark, color, liveRates }) {
   const totalAssets = assets.reduce((s, w) => s + toTL(w), 0);
   const totalDebts = debts.reduce((s, w) => s + toTL(w), 0);
   const netWorth = totalAssets - totalDebts;
+  const totalAssetsDisplay = convertFromTRY(totalAssets, cur, liveRates);
+  const totalDebtsDisplay = convertFromTRY(totalDebts, cur, liveRates);
+  const netWorthDisplay = convertFromTRY(Math.abs(netWorth), cur, liveRates);
 
   // Total monthly debt obligations
   const monthlyDebtLoad = debts.reduce((s, w) => {
@@ -449,6 +454,7 @@ function Assets({ wallets = [], refreshData, isDark, color, liveRates }) {
     }
     return s;
   }, 0);
+  const monthlyDebtLoadDisplay = convertFromTRY(monthlyDebtLoad, cur, liveRates);
 
   const handleAdd = (form) => {
     if (!form.name?.trim()) return;
@@ -480,21 +486,21 @@ function Assets({ wallets = [], refreshData, isDark, color, liveRates }) {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className={`p-6 rounded-[2rem] border ${isDark ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200 shadow-xl'}`}>
             <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-2">Toplam Varlık</p>
-            <p className="text-xl font-black text-emerald-500">+₺{totalAssets.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</p>
+            <p className="text-xl font-black text-emerald-500">+{cur}{totalAssetsDisplay.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</p>
           </div>
           <div className={`p-6 rounded-[2rem] border ${isDark ? 'bg-rose-500/5 border-rose-500/20' : 'bg-rose-50 border-rose-200 shadow-xl'}`}>
             <p className="text-[10px] font-black uppercase tracking-widest text-rose-400 mb-2">Toplam Borç</p>
-            <p className="text-xl font-black text-rose-500">-₺{totalDebts.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</p>
+            <p className="text-xl font-black text-rose-500">-{cur}{totalDebtsDisplay.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</p>
           </div>
           <div className={`p-6 rounded-[2rem] border ${cardBg}`}>
             <p className={`text-[10px] font-black uppercase tracking-widest opacity-40 mb-2 ${txt}`}>Net Değer</p>
             <p className={`text-xl font-black ${netWorth >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-              {netWorth >= 0 ? '+' : ''}₺{netWorth.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+              {netWorth >= 0 ? '+' : '-'}{cur}{netWorthDisplay.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
             </p>
           </div>
           <div className={`p-6 rounded-[2rem] border ${isDark ? 'bg-rose-500/5 border-rose-500/10' : 'bg-slate-50 border-slate-200 shadow-xl'}`}>
             <p className={`text-[10px] font-black uppercase tracking-widest opacity-40 mb-2 ${txt}`}>Aylık Taksit Yükü</p>
-            <p className="text-xl font-black text-rose-400">₺{monthlyDebtLoad.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</p>
+            <p className="text-xl font-black text-rose-400">{cur}{monthlyDebtLoadDisplay.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</p>
           </div>
         </div>
       </header>

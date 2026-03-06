@@ -1,17 +1,18 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, X, TrendingDown, TrendingUp, Calendar as CalIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, TrendingDown, TrendingUp } from 'lucide-react';
+import { convertFromTRY, normalizeCurrencySymbol } from '../utils/currency';
 
 const DAYS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
 const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 
-export default function Calendar({ transactions = [], isDark, color, prefs, cats = [] }) {
+export default function Calendar({ transactions = [], isDark, color, prefs, liveRates, cats = [] }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedDayTxs, setSelectedDayTxs] = useState([]);
 
   const catMap = useMemo(() => Object.fromEntries(cats.map(c => [c.id, c])), [cats]);
-  const cur = prefs?.currency || '₺';
+  const cur = normalizeCurrencySymbol(prefs?.currency);
   const txt = isDark ? 'text-white' : 'text-slate-900';
   const cardBg = isDark
     ? 'bg-white/[0.03] border-white/10 backdrop-blur-xl'
@@ -111,7 +112,7 @@ export default function Calendar({ transactions = [], isDark, color, prefs, cats
           <div key={label} className={`p-5 rounded-[2rem] border ${cardBg}`}>
             <p className={`text-[10px] font-semibold uppercase tracking-widest opacity-30 mb-1.5 ${txt}`}>{label}</p>
             <p className={`font-num text-xl font-bold tracking-tight ${cls}`}>
-              {prefix}{cur}{Math.abs(val).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+              {prefix}{cur}{convertFromTRY(Math.abs(val), cur, liveRates).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
             </p>
           </div>
         ))}
@@ -250,13 +251,13 @@ export default function Calendar({ transactions = [], isDark, color, prefs, cats
                       {exp > 0 && (
                         <div className="flex items-center gap-2">
                           <TrendingDown size={14} className="text-rose-500"/>
-                          <span className="text-rose-500 font-black text-sm">{cur}{exp.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</span>
+                          <span className="text-rose-500 font-black text-sm">{cur}{convertFromTRY(exp, cur, liveRates).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</span>
                         </div>
                       )}
                       {inc > 0 && (
                         <div className="flex items-center gap-2">
                           <TrendingUp size={14} className="text-emerald-500"/>
-                          <span className="text-emerald-500 font-black text-sm">{cur}{inc.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</span>
+                          <span className="text-emerald-500 font-black text-sm">{cur}{convertFromTRY(inc, cur, liveRates).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</span>
                         </div>
                       )}
                     </div>
@@ -281,7 +282,7 @@ export default function Calendar({ transactions = [], isDark, color, prefs, cats
                           </div>
                         </div>
                         <p className={`font-black text-base ${t.type === 'income' ? 'text-emerald-500' : 'text-rose-500'}`}>
-                          {t.type === 'income' ? '+' : '-'}{parseFloat(t.amount || 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} {cur}
+                          {t.type === 'income' ? '+' : '-'}{convertFromTRY(parseFloat(t.amount || 0), cur, liveRates).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} {cur}
                         </p>
                       </div>
                     );
