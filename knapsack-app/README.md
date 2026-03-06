@@ -219,6 +219,11 @@ android/app/build/outputs/bundle/release/app-release.aab
 4. `Data safety` ve `Privacy Policy` alanlarını tamamla.
 5. İç testten sonra production yayını başlat.
 
+Hazir dokumanlar:
+- `docs/play-console/internal-testing-checklist-tr.md`
+- `docs/play-console/store-listing-template-tr.md`
+- `docs/play-console/privacy-policy-template-tr.md`
+
 ### 5) Her yeni sürümde
 
 1. Kod değişikliği yap.
