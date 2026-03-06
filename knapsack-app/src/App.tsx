@@ -363,7 +363,7 @@ function App() {
       </button>
 
       {/* PAGES */}
-      <div className="relative z-10">
+      <div className="relative">
         <ErrorBoundary>
           <Suspense fallback={
             <div className={`h-screen flex flex-col items-center justify-center gap-3 ${isDark ? 'bg-[#06060a]' : 'bg-[#f2f1ed]'}`}>
