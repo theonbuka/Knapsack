@@ -30,15 +30,15 @@ function EditModal({ tx, cats, isDark, color, wallets, onSave, onClose }) {
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md"
+      className="fixed inset-0 z-[400] flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/75 backdrop-blur-md"
       onClick={e => e.target === e.currentTarget && onClose()}
     >
       <motion.div
         initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-        className={`w-full max-w-md rounded-[2.5rem] border ${isDark ? 'bg-[#0c0c0d] border-white/10' : 'bg-white border-slate-200 shadow-2xl'}`}
+        className={`w-full max-w-md rounded-t-[2.25rem] sm:rounded-[2.5rem] border ${isDark ? 'bg-[#0c0c0d] border-white/10' : 'bg-white border-slate-200 shadow-2xl'}`}
       >
-        <div className="max-h-[92vh] overflow-y-auto p-7 sm:p-8">
+        <div className="max-h-[86dvh] sm:max-h-[92vh] overflow-y-auto p-6 sm:p-8 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]">
           <div className="flex justify-between items-center mb-6">
             <h2 className={`font-num text-2xl font-bold tracking-tighter ${txt}`}>İşlemi Düzenle</h2>
             <button onClick={onClose} className={`p-2.5 rounded-2xl transition-colors ${isDark ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-100 hover:bg-slate-200'}`}>
@@ -99,11 +99,13 @@ function EditModal({ tx, cats, isDark, color, wallets, onSave, onClose }) {
                 </div>
               </div>
             )}
-            <button onClick={() => onSave(form)}
-              className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest text-white transition-opacity hover:opacity-90 ${color.bg}`}>
-              <Check size={15} className="inline mr-2" />
-              Kaydet
-            </button>
+            <div className={`sticky bottom-0 pt-4 ${isDark ? 'bg-gradient-to-t from-[#0c0c0d] via-[#0c0c0d] to-transparent' : 'bg-gradient-to-t from-white via-white to-transparent'}`}>
+              <button onClick={() => onSave(form)}
+                className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest text-white transition-opacity hover:opacity-90 ${color.bg}`}>
+                <Check size={15} className="inline mr-2" />
+                Kaydet
+              </button>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -275,7 +277,7 @@ function Transactions({ transactions = [], isDark, color, prefs, liveRates, refr
                     </p>
                     {t.currency && t.currency !== '₺' && <p className={`text-[9px] mt-0.5 ${sub}`}>{t.currency}</p>}
                   </div>
-                  <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     <button onClick={() => setEditTx(t)}
                       className={`p-1.5 rounded-xl transition-colors ${isDark ? 'text-white/40 hover:text-white hover:bg-white/5' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>
                       <Edit3 size={12} />
