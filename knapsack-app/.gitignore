@@ -24,3 +24,7 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Local backup archives
+backups/*.zip
+knapsack-app-backup*.zip
