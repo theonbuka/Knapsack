@@ -63,7 +63,7 @@ function WalletCard({ wallet, globalIdx, isDark, color, liveRates, onRemove }) {
           <div className={`p-3 rounded-2xl ${isDebt ? 'bg-rose-500/10 text-rose-400' : `${color.bg} text-white`}`}>
             {isCC ? <CreditCard size={20}/> : isLoan ? <Calculator size={20}/> : wallet.type === 'Banka' ? <Landmark size={20}/> : <Wallet size={20}/>}
           </div>
-          <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             {(isCC || isLoan) && (
               <button onClick={() => setExpanded(p => !p)}
                 className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-white/40 hover:text-white' : 'text-slate-400 hover:text-slate-700'}`}>
@@ -176,11 +176,11 @@ function LoanCalcModal({ isDark, inputCls, onClose, onSubmit }) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+      className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-md"
       onClick={e => e.target === e.currentTarget && onClose()}>
       <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
-        className={`w-full max-w-lg rounded-[3rem] border ${isDark ? 'bg-[#0e0e0f] border-white/10' : 'bg-white border-slate-200 shadow-2xl'}`}>
-        <div className="max-h-[92vh] overflow-y-auto p-8">
+        className={`w-full max-w-lg rounded-t-[2.25rem] sm:rounded-[3rem] border ${isDark ? 'bg-[#0e0e0f] border-white/10' : 'bg-white border-slate-200 shadow-2xl'}`}>
+        <div className="max-h-[86dvh] sm:max-h-[92vh] overflow-y-auto p-6 sm:p-8 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]">
           <div className="flex justify-between items-center mb-7">
             <div>
               <h2 className={`text-2xl font-black ${txt}`}>Taksitli Kredi / Borç</h2>
@@ -262,9 +262,11 @@ function LoanCalcModal({ isDark, inputCls, onClose, onSubmit }) {
               </div>
             )}
 
-            <button type="submit" className="w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest text-white bg-rose-500 hover:bg-rose-600 transition-colors">
-              Kaydet
-            </button>
+            <div className={`sticky bottom-0 pt-4 ${isDark ? 'bg-gradient-to-t from-[#0e0e0f] via-[#0e0e0f] to-transparent' : 'bg-gradient-to-t from-white via-white to-transparent'}`}>
+              <button type="submit" className="w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest text-white bg-rose-500 hover:bg-rose-600 transition-colors">
+                Kaydet
+              </button>
+            </div>
           </form>
         </div>
       </motion.div>
@@ -283,11 +285,11 @@ function CreditCardModal({ isDark, color, inputCls, onClose, onSubmit }) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+      className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-md"
       onClick={e => e.target === e.currentTarget && onClose()}>
       <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
-        className={`w-full max-w-lg rounded-[3rem] border ${isDark ? 'bg-[#0e0e0f] border-white/10' : 'bg-white border-slate-200 shadow-2xl'}`}>
-        <div className="max-h-[92vh] overflow-y-auto p-8 space-y-4">
+        className={`w-full max-w-lg rounded-t-[2.25rem] sm:rounded-[3rem] border ${isDark ? 'bg-[#0e0e0f] border-white/10' : 'bg-white border-slate-200 shadow-2xl'}`}>
+        <div className="max-h-[86dvh] sm:max-h-[92vh] overflow-y-auto p-6 sm:p-8 space-y-4 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]">
           <div className="flex justify-between items-center mb-2">
             <div>
               <h2 className={`text-2xl font-black ${txt}`}>Kredi Kartı / KMH Ekle</h2>
@@ -359,9 +361,11 @@ function CreditCardModal({ isDark, color, inputCls, onClose, onSubmit }) {
               </div>
             )}
 
-            <button type="submit" className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest text-white ${color.bg}`}>
-              Kartı Ekle
-            </button>
+            <div className={`sticky bottom-0 pt-4 ${isDark ? 'bg-gradient-to-t from-[#0e0e0f] via-[#0e0e0f] to-transparent' : 'bg-gradient-to-t from-white via-white to-transparent'}`}>
+              <button type="submit" className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest text-white ${color.bg}`}>
+                Kartı Ekle
+              </button>
+            </div>
           </form>
         </div>
       </motion.div>
@@ -377,11 +381,11 @@ function AssetModal({ isDark, color, inputCls, onClose, onSubmit }) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+      className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-md"
       onClick={e => e.target === e.currentTarget && onClose()}>
       <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
-        className={`w-full max-w-md rounded-[3rem] border ${isDark ? 'bg-[#0e0e0f] border-white/10' : 'bg-white border-slate-200 shadow-2xl'}`}>
-        <div className="max-h-[92vh] overflow-y-auto p-8">
+        className={`w-full max-w-md rounded-t-[2.25rem] sm:rounded-[3rem] border ${isDark ? 'bg-[#0e0e0f] border-white/10' : 'bg-white border-slate-200 shadow-2xl'}`}>
+        <div className="max-h-[86dvh] sm:max-h-[92vh] overflow-y-auto p-6 sm:p-8 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]">
           <div className="flex justify-between items-center mb-7">
             <h2 className={`text-2xl font-black ${txt}`}>Yeni Varlık Ekle</h2>
             <button onClick={onClose} className="opacity-40 hover:opacity-100"><X size={20} className={txt}/></button>
@@ -412,9 +416,11 @@ function AssetModal({ isDark, color, inputCls, onClose, onSubmit }) {
                 </button>
               ))}
             </div>
-            <button type="submit" className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest text-white ${color.bg}`}>
-              Ekle
-            </button>
+            <div className={`sticky bottom-0 pt-4 ${isDark ? 'bg-gradient-to-t from-[#0e0e0f] via-[#0e0e0f] to-transparent' : 'bg-gradient-to-t from-white via-white to-transparent'}`}>
+              <button type="submit" className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest text-white ${color.bg}`}>
+                Ekle
+              </button>
+            </div>
           </form>
         </div>
       </motion.div>
@@ -476,7 +482,7 @@ function Assets({ wallets = [], refreshData, isDark, color, liveRates, prefs }) 
 
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-      className="max-w-5xl mx-auto px-4 sm:px-6 pt-20 pb-44">
+      className="max-w-5xl mx-auto px-4 sm:px-6 pt-20 pb-[calc(env(safe-area-inset-bottom)+11rem)]">
 
       {/* HEADER */}
       <header className="mb-8">
@@ -537,13 +543,13 @@ function Assets({ wallets = [], refreshData, isDark, color, liveRates, prefs }) 
             <h2 className="text-2xl font-black tracking-tight text-rose-500">Borçlar & Krediler</h2>
             <p className={`text-[10px] uppercase tracking-widest opacity-30 font-black ${txt}`}>{debts.length} kayıt</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap justify-end">
             <button onClick={() => setShowAdd('cc')}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl font-black text-xs text-white bg-violet-500 hover:bg-violet-600 transition-colors">
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl font-black text-xs text-white bg-violet-500 hover:bg-violet-600 transition-colors whitespace-nowrap">
               <CreditCard size={14}/> Kart / KMH
             </button>
             <button onClick={() => setShowAdd('loan')}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl font-black text-xs text-white bg-rose-500 hover:bg-rose-600 transition-colors">
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl font-black text-xs text-white bg-rose-500 hover:bg-rose-600 transition-colors whitespace-nowrap">
               <Calculator size={14}/> Kredi / Taksit
             </button>
           </div>

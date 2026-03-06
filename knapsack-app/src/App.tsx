@@ -72,7 +72,7 @@ function QuickAddModal({
           <div className={`w-9 h-1 rounded-full ${isDark ? 'bg-white/12' : 'bg-slate-200'}`} />
         </div>
 
-        <div className="max-h-[90vh] overflow-y-auto p-6 sm:p-8">
+        <div className="max-h-[86dvh] sm:max-h-[90vh] overflow-y-auto p-6 sm:p-8 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]">
           {/* Header row */}
           <div className="flex justify-between items-center mb-6">
             <div className={`flex gap-1 p-1 rounded-xl ${isDark ? 'bg-white/[0.05]' : 'bg-slate-100'}`}>
@@ -229,13 +229,15 @@ function QuickAddModal({
               </p>
             )}
 
-            <button
-              type="submit"
-              className={`w-full py-4 rounded-2xl text-sm font-bold uppercase tracking-[0.4em] text-white transition-all hover:opacity-90 active:scale-[0.98] ${activeColor.bg}`}
-              style={{ boxShadow: `0 4px 24px ${activeColor.hex}35` }}
-            >
-              Kaydet
-            </button>
+            <div className={`sticky bottom-0 pt-4 ${isDark ? 'bg-gradient-to-t from-[#0c0c14] via-[#0c0c14] to-transparent' : 'bg-gradient-to-t from-white via-white to-transparent'}`}>
+              <button
+                type="submit"
+                className={`w-full py-4 rounded-2xl text-sm font-bold uppercase tracking-[0.4em] text-white transition-all hover:opacity-90 active:scale-[0.98] ${activeColor.bg}`}
+                style={{ boxShadow: `0 4px 24px ${activeColor.hex}35` }}
+              >
+                Kaydet
+              </button>
+            </div>
           </form>
         </div>
       </motion.div>
@@ -392,7 +394,7 @@ function App() {
           setQuickAddError('');
           setIsModalOpen(true);
         }}
-        className={`fixed bottom-[5.5rem] right-5 z-[250] w-[52px] h-[52px] rounded-full flex items-center justify-center ${activeColor.bg} text-white active:scale-90 transition-transform`}
+        className={`fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-5 z-[250] w-[52px] h-[52px] rounded-full flex items-center justify-center ${activeColor.bg} text-white active:scale-90 transition-transform`}
         style={{ boxShadow: `0 6px 28px ${activeColor.hex}50` }}
         aria-label="Create new transaction"
         aria-expanded={isModalOpen}
@@ -401,7 +403,7 @@ function App() {
       </button>
 
       {/* DOCK NAV */}
-      <div className="fixed bottom-5 left-0 right-0 flex justify-center z-[150] px-4">
+      <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] left-0 right-0 flex justify-center z-[150] px-4">
         <div
           className={`flex items-center px-1.5 py-1.5 rounded-full border ${
             isDark

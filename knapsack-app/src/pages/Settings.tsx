@@ -105,7 +105,7 @@ function CategoryEditor({ cats, saveCats, isDark, color }) {
                 <p className={`font-black text-sm truncate ${txt}`}>{cat.name}</p>
                 {cat.limit > 0 && <p className={`text-[10px] opacity-30 ${txt}`}>Limit: ₺{cat.limit.toLocaleString()}</p>}
               </div>
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 <button onClick={() => startEdit(cat)}
                   className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-white/40 hover:text-white' : 'text-slate-400 hover:text-slate-700'}`}>
                   <Edit3 size={13}/>
@@ -214,7 +214,7 @@ function Settings({ isDark, color, prefs, savePrefs, cats = [], saveCats }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-      className="max-w-2xl mx-auto px-4 sm:px-6 pt-20 pb-44">
+      className="max-w-2xl mx-auto px-4 sm:px-6 pt-20 pb-[calc(env(safe-area-inset-bottom)+11rem)]">
 
       <header className="mb-10">
         <p className="text-[10px] font-black uppercase tracking-[0.5em] mb-2 text-indigo-500 opacity-60">Knapsack</p>

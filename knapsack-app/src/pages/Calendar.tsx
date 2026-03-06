@@ -79,7 +79,7 @@ export default function Calendar({ transactions = [], isDark, color, prefs, live
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      className="max-w-5xl mx-auto px-4 sm:px-6 pt-20 pb-44">
+      className="max-w-5xl mx-auto px-4 sm:px-6 pt-20 pb-[calc(env(safe-area-inset-bottom)+11rem)]">
 
       {/* HEADER */}
       <div className="flex items-end justify-between mb-8">
@@ -223,10 +223,10 @@ export default function Calendar({ transactions = [], isDark, color, prefs, live
               initial={{ y: '100%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
               onClick={e => e.stopPropagation()}
-              className={`w-full max-w-lg rounded-t-[3rem] sm:rounded-[3rem] border max-h-[85vh] overflow-y-auto
+              className={`w-full max-w-lg rounded-t-[3rem] sm:rounded-[3rem] border
                 ${isDark ? 'bg-[#0a0a0b] border-white/8 text-white' : 'bg-white border-slate-200 shadow-2xl text-slate-900'}`}
             >
-              <div className="p-8">
+              <div className="max-h-[86dvh] sm:max-h-[85vh] overflow-y-auto p-6 sm:p-8 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]">
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h3 className={`text-3xl font-black tracking-tighter ${txt}`}>

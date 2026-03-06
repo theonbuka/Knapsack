@@ -188,7 +188,7 @@ function Expenses({ expenses = [], isDark, color, prefs, liveRates, addExpense, 
         </p>
 
         {/* actions */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+        <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex-shrink-0">
           <button onClick={() => { setEditItem(item); setForm({ type: item.type, name: item.name, amount: String(item.amount), currency: item.currency || '₺', dueDay: item.dueDay }); setShowAdd(true); }}
             className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-white/40 hover:text-white' : 'text-slate-400 hover:text-slate-700'}`}>
             <Edit3 size={13}/>
@@ -224,7 +224,7 @@ function Expenses({ expenses = [], isDark, color, prefs, liveRates, addExpense, 
 
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-      className="max-w-3xl mx-auto px-4 sm:px-6 pt-20 pb-44">
+      className="max-w-3xl mx-auto px-4 sm:px-6 pt-20 pb-[calc(env(safe-area-inset-bottom)+11rem)]">
 
       <header className="mb-8 flex justify-between items-end">
         <div>
@@ -281,11 +281,11 @@ function Expenses({ expenses = [], isDark, color, prefs, liveRates, addExpense, 
       <AnimatePresence>
         {showAdd && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+            className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-md"
             onClick={e => e.target === e.currentTarget && setShowAdd(false)}>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className={`w-full max-w-md rounded-[3rem] border ${isDark ? 'bg-[#0e0e0f] border-white/10' : 'bg-white border-slate-200 shadow-2xl'}`}>
-              <div className="max-h-[92vh] overflow-y-auto p-8">
+              className={`w-full max-w-md rounded-t-[2.25rem] sm:rounded-[3rem] border ${isDark ? 'bg-[#0e0e0f] border-white/10' : 'bg-white border-slate-200 shadow-2xl'}`}>
+              <div className="max-h-[86dvh] sm:max-h-[92vh] overflow-y-auto p-6 sm:p-8 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className={`text-2xl font-black ${txt}`}>{editItem ? 'Gideri Düzenle' : 'Yeni Sabit Gider'}</h2>
                   <button onClick={() => setShowAdd(false)} className="opacity-40 hover:opacity-100"><X size={20} className={txt}/></button>
@@ -348,10 +348,12 @@ function Expenses({ expenses = [], isDark, color, prefs, liveRates, addExpense, 
                     <span className={`text-xs opacity-30 ${txt}`}>Her ayın {form.dueDay || 1}. günü</span>
                   </div>
 
-                  <button type="submit"
-                    className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest text-white ${color.bg}`}>
-                    {editItem ? 'Güncelle' : 'Ekle'}
-                  </button>
+                  <div className={`sticky bottom-0 pt-4 ${isDark ? 'bg-gradient-to-t from-[#0e0e0f] via-[#0e0e0f] to-transparent' : 'bg-gradient-to-t from-white via-white to-transparent'}`}>
+                    <button type="submit"
+                      className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest text-white ${color.bg}`}>
+                      {editItem ? 'Güncelle' : 'Ekle'}
+                    </button>
+                  </div>
                 </form>
               </div>
             </motion.div>

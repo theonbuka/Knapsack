@@ -98,7 +98,7 @@ export default function Home({ transactions = [], wallets = [], isDark, prefs, c
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.45 }}
-      className="max-w-5xl mx-auto px-4 sm:px-6 pt-4 pb-44"
+      className="max-w-5xl mx-auto px-4 sm:px-6 pt-4 pb-[calc(env(safe-area-inset-bottom)+11rem)]"
     >
       {/* ── LIVE TICKER ───────────────────────────────────────── */}
       <div className={`overflow-hidden py-2.5 -mx-4 sm:-mx-6 mb-12 border-b ${isDark ? 'border-white/[0.06] bg-white/[0.02]' : 'border-slate-200/60 bg-slate-50/30'}`}>

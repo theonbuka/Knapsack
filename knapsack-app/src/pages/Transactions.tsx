@@ -162,7 +162,7 @@ function Transactions({ transactions = [], isDark, color, prefs, liveRates, refr
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="max-w-3xl mx-auto px-4 sm:px-6 pt-20 pb-44"
+      className="max-w-3xl mx-auto px-4 sm:px-6 pt-20 pb-[calc(env(safe-area-inset-bottom)+11rem)]"
     >
       <header className="mb-8">
         <p className={`text-[10px] font-semibold uppercase tracking-[0.45em] mb-2 text-indigo-500/60`}>Knapsack</p>
