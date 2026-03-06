@@ -49,6 +49,7 @@ export default function Landing() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState('');
+  const [infoMessage, setInfoMessage] = useState('');
   const [googleReady, setGoogleReady] = useState(false);
 
   const error = localError || authError || '';
@@ -147,16 +148,24 @@ export default function Landing() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLocalError('');
+    setInfoMessage('');
 
     if (mode === 'register') {
-      const success = await register(name, surname, email, password);
-      if (success) {
+      const result = await register(name, surname, email, password);
+      if (result.success) {
         navigate('/');
         return;
       }
 
+      if (result.requiresVerification) {
+        setMode('login');
+        setPassword('');
+        setInfoMessage(result.message || 'Aktivasyon emaili gönderildi. Mail kutunu kontrol et.');
+        return;
+      }
+
       if (!authError) {
-        setLocalError('Kayıt işlemi başarısız.');
+        setLocalError(result.message || 'Kayıt işlemi başarısız.');
       }
     } else {
       const success = await login(email, password);
@@ -173,10 +182,12 @@ export default function Landing() {
 
   const handleDemo = async () => {
     setLocalError('');
-    const success = await register('Demo', 'Kullanıcı', 'demo@knapsack.local', '123456');
-    if (!success) {
+    setInfoMessage('');
+
+    const result = await register('Demo', 'Kullanıcı', 'demo@knapsack.local', '123456');
+    if (!result.success) {
       if (!authError) {
-        setLocalError('Demo hesabı oluşturulamadı.');
+        setLocalError(result.message || 'Demo hesabı oluşturulamadı.');
       }
       return;
     }
@@ -274,7 +285,7 @@ export default function Landing() {
           {/* Toggle */}
           <div className="flex gap-1 p-1 rounded-2xl bg-white/5 border border-white/5 mb-8">
             {[['login','Giriş Yap'], ['register','Kayıt Ol']].map(([m, label]) => (
-              <button key={m} onClick={() => { setMode(m as 'login' | 'register'); setLocalError(''); }}
+              <button key={m} onClick={() => { setMode(m as 'login' | 'register'); setLocalError(''); setInfoMessage(''); }}
                 className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${mode===m ? 'bg-indigo-600 text-white' : 'text-white/30 hover:text-white'}`}>
                 {label}
               </button>
@@ -332,6 +343,15 @@ export default function Landing() {
                 <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
                   className="text-rose-400 text-xs font-black">
                   {error}
+                </motion.p>
+              )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {infoMessage && (
+                <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+                  className="text-emerald-300 text-xs font-black">
+                  {infoMessage}
                 </motion.p>
               )}
             </AnimatePresence>

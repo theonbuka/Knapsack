@@ -9,12 +9,23 @@ import {
   migrateLegacyDataToUser,
   setActiveUserStorageId,
 } from '../utils/accountStorage';
+import {
+  getSupabaseAuthClient,
+  getSupabaseEmailRedirectUrl,
+  isSupabaseAuthConfigured,
+} from '../utils/supabaseAuth';
 
 interface GoogleLoginData {
   name: string;
   googleId: string;
   email?: string;
   picture?: string;
+}
+
+interface RegisterResult {
+  success: boolean;
+  requiresVerification?: boolean;
+  message?: string;
 }
 
 interface AuthContextType {
@@ -27,7 +38,7 @@ interface AuthContextType {
     surname: string,
     email: string,
     password: string
-  ) => Promise<boolean>;
+  ) => Promise<RegisterResult>;
   isAuthenticated: boolean;
   error: string | null;
 }
@@ -36,6 +47,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_KEY = 'knapsack_auth';
 const HASH_REGEX = /^[a-f0-9]{64}$/i;
+const LOCAL_TEST_EMAIL_SUFFIX = '@knapsack.local';
 const EMPTY_AUTH: AuthState = {
   name: '',
   surname: '',
@@ -44,6 +56,15 @@ const EMPTY_AUTH: AuthState = {
   pin: '',
   loggedIn: false,
 };
+
+function isLocalBypassEmail(email: string): boolean {
+  return email.endsWith(LOCAL_TEST_EMAIL_SUFFIX);
+}
+
+function isEmailNotConfirmedError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return normalized.includes('email not confirmed') || normalized.includes('email_not_confirmed');
+}
 
 function normalizeAuthState(raw: unknown): AuthState | null {
   if (!raw || typeof raw !== 'object') {
@@ -262,6 +283,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
       const normalizedEmail = validated.email.toLowerCase();
 
+      const shouldUseSupabaseEmailAuth = isSupabaseAuthConfigured() && !isLocalBypassEmail(normalizedEmail);
+      if (shouldUseSupabaseEmailAuth) {
+        const supabase = getSupabaseAuthClient();
+        if (supabase) {
+          const { data, error: signInError } = await supabase.auth.signInWithPassword({
+            email: normalizedEmail,
+            password: validated.password,
+          });
+
+          if (signInError && isEmailNotConfirmedError(signInError.message)) {
+            setError('Email adresini doğrulamadan giriş yapamazsın. Aktivasyon mailindeki bağlantıyı aç.');
+            return false;
+          }
+
+          if (!signInError && data.user) {
+            const metadata = (data.user.user_metadata || {}) as Record<string, unknown>;
+            const nameFromMetadata = typeof metadata.name === 'string'
+              ? metadata.name
+              : typeof metadata.given_name === 'string'
+                ? metadata.given_name
+                : '';
+            const surnameFromMetadata = typeof metadata.surname === 'string' ? metadata.surname : '';
+            const fallbackName = normalizedEmail.split('@')[0];
+
+            const supabaseAuthState: AuthState = {
+              name: (nameFromMetadata || fallbackName || 'Kullanıcı').trim(),
+              surname: surnameFromMetadata.trim(),
+              email: normalizedEmail,
+              password: Encryption.hashPin(validated.password),
+              pin: '',
+              loggedIn: true,
+            };
+
+            const supabaseStorageId = getAuthStorageId(supabaseAuthState);
+            if (supabaseStorageId) {
+              setActiveUserStorageId(supabaseStorageId);
+              migrateLegacyDataToUser(supabaseStorageId);
+            }
+
+            setAuth(supabaseAuthState);
+            persistAuth(supabaseAuthState);
+
+            // Session tokens are not needed in this local-first app.
+            void supabase.auth.signOut();
+            return true;
+          }
+        }
+      }
+
       // Get stored auth and support plaintext migration fallback.
       const storedAuth = normalizeAuthState(SecureStorage.getSecure<AuthState>(AUTH_KEY)) || loadLegacyAuth();
       if (!storedAuth) {
@@ -294,7 +364,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const passwordHash = isLegacyPlainMatch ? Encryption.hashPin(validated.password) : storedSecret;
 
-      const nextAuth: AuthState = {
+      const localAuthState: AuthState = {
         ...storedAuth,
         email: normalizedEmail,
         password: passwordHash,
@@ -302,14 +372,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loggedIn: true,
       };
 
-      const storageId = getAuthStorageId(nextAuth);
-      if (storageId) {
-        setActiveUserStorageId(storageId);
-        migrateLegacyDataToUser(storageId);
+      const localStorageId = getAuthStorageId(localAuthState);
+      if (localStorageId) {
+        setActiveUserStorageId(localStorageId);
+        migrateLegacyDataToUser(localStorageId);
       }
 
-      setAuth(nextAuth);
-      persistAuth(nextAuth);
+      setAuth(localAuthState);
+      persistAuth(localAuthState);
       return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Giriş başarısız';
@@ -323,7 +393,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     surname: string,
     email: string,
     password: string
-  ): Promise<boolean> => {
+  ): Promise<RegisterResult> => {
     try {
       setError(null);
 
@@ -340,8 +410,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       const normalizedEmail = validated.email.toLowerCase();
-      const hashedPassword = Encryption.hashPin(validated.password);
+      const shouldUseSupabaseEmailAuth = isSupabaseAuthConfigured() && !isLocalBypassEmail(normalizedEmail);
 
+      if (shouldUseSupabaseEmailAuth) {
+        const supabase = getSupabaseAuthClient();
+        if (!supabase) {
+          setError('Supabase bağlantısı kurulamadı. Lütfen tekrar deneyin.');
+          return { success: false };
+        }
+
+        const redirectTo = getSupabaseEmailRedirectUrl();
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email: normalizedEmail,
+          password: validated.password,
+          options: {
+            data: {
+              name: validated.name,
+              surname: validated.surname,
+            },
+            ...(redirectTo ? { emailRedirectTo: redirectTo } : {}),
+          },
+        });
+
+        if (signUpError) {
+          setError(`Kayıt başarısız: ${signUpError.message}`);
+          return { success: false };
+        }
+
+        if (data.session) {
+          setError('Aktivasyon emaili için Supabase Authentication > Email > Confirm email ayarını açmalısın.');
+          void supabase.auth.signOut();
+          return { success: false };
+        }
+
+        const identityCount = Array.isArray(data.user?.identities) ? data.user.identities.length : 1;
+        if (identityCount === 0) {
+          setError('Bu email zaten kayıtlı. Giriş yapmayı deneyin.');
+          return { success: false };
+        }
+
+        clearActiveUserStorageId();
+
+        const pendingAuth: AuthState = {
+          name: validated.name,
+          surname: validated.surname,
+          email: normalizedEmail,
+          password: '',
+          pin: '',
+          loggedIn: false,
+        };
+
+        setAuth(pendingAuth);
+        persistAuth(pendingAuth);
+
+        return {
+          success: false,
+          requiresVerification: true,
+          message: 'Aktivasyon emaili gönderildi. Mail içinde hoş geldiniz mesajı ve öne çıkan özellikler yer alır.',
+        };
+      }
+
+      const hashedPassword = Encryption.hashPin(validated.password);
       const newAuth: AuthState = {
         name: validated.name,
         surname: validated.surname,
@@ -359,11 +488,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setAuth(newAuth);
       persistAuth(newAuth);
-      return true;
+      return { success: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Kayıt başarısız';
       setError(message);
-      return false;
+      return { success: false };
     }
   };
 

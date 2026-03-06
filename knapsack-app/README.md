@@ -10,6 +10,7 @@ Knapsack, modern tasarımı ve güçlü özellikleriyle kişisel ve profesyonel 
 - 📅 **Takvim Görünümü**: Harcamalarını tarih bazında incele
 - ⚙️ **Özelleştirme**: Kategoriler, cüzdanlar ve para birimlerini özelleştir
 - ☁️ **Hesap Bazlı Senkronizasyon (Opsiyonel)**: Supabase ile cihazlar arası veri senkronu
+- ✉️ **Aktivasyon E-postası (Opsiyonel)**: Supabase Auth ile doğrulama + hoş geldiniz içeriği
 - 🌙 **Koyu/Açık Mod**: Gözünü yorma, istediğin tema seç
 - 📱 **Mobil Uyumlu**: Telefondan, tablettten, masaüstünden erişebilir
 - ⚡ **Hızlı & Hafif**: Vite ile optimize edilmiş performans
@@ -100,9 +101,20 @@ supabase/            # Supabase SQL schema dosyaları
 VITE_SUPABASE_URL=https://<project-id>.supabase.co
 VITE_SUPABASE_ANON_KEY=<anon-public-key>
 VITE_SUPABASE_SYNC_TABLE=knapsack_user_data
+VITE_SUPABASE_AUTH_REDIRECT_TO=https://<app-domain>/landing
 ```
 
 Bu alanlar tanımlı değilse uygulama otomatik olarak local-first modda çalışmaya devam eder.
+
+## ✉️ Aktivasyon Maili + Hos Geldiniz Icerigi
+
+1. Supabase Dashboard -> `Authentication` -> `Providers` -> `Email` aktif olsun.
+2. `Confirm email` secenegini ac.
+3. `Authentication` -> `URL Configuration` bolumunde `Site URL` ve redirect URL olarak uygulama domainini/`/landing` sayfasini tanimla.
+4. `Authentication` -> `Email Templates` -> `Confirm signup` icerigini `supabase/templates/confirm-signup.html` ile degistir.
+5. Uygulamada kayit olan kullaniciya aktivasyon emaili gider; bu mailde hos geldiniz metni ve temel ozellikler listesi yer alir.
+
+Not: `@knapsack.local` uzantili test/demo emailleri aktivasyon bypass ile calisir (test ve demo akislarini bozmamak icin).
 
 ## 📦 Derleme & Deployment
 
