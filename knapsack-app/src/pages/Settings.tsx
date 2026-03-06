@@ -4,6 +4,8 @@ import { Download, Trash2, Palette, DollarSign, Shield, LogOut, User, Tags, Plus
 import { useNavigate } from 'react-router-dom';
 import { themeColors, customDB, PRESET_EMOJIS, PRESET_COLORS } from '../utils/constants';
 import { useAuth } from '../contexts/AuthContext';
+import { clearLocalSyncStamp, getAllScopedDataKeys, getAuthStorageId } from '../utils/accountStorage';
+import { deleteCloudSnapshot, isCloudSyncConfigured } from '../utils/cloudSync';
 
 const CURRENCIES = ['₺', '$', '€'];
 
@@ -162,7 +164,10 @@ function Settings({ isDark, color, prefs, savePrefs, cats = [], saveCats }) {
   const { auth, logout } = useAuth();
   const [showConfirm, setShowConfirm] = useState(false);
   const fullName = `${auth?.name || ''} ${auth?.surname || ''}`.trim() || 'Kullanıcı';
-  const accountTypeText = auth?.googleId ? 'Google hesabı · veriler bu cihazda' : 'Yerel hesap · veriler bu cihazda';
+  const cloudSyncEnabled = isCloudSyncConfigured();
+  const accountTypeText = auth?.googleId
+    ? `Google hesabı · ${cloudSyncEnabled ? 'bulut senkron aktif' : 'veriler bu cihazda'}`
+    : `Yerel hesap · ${cloudSyncEnabled ? 'bulut senkron aktif' : 'veriler bu cihazda'}`;
 
   const txt = isDark ? 'text-white' : 'text-slate-900';
   const cardBg = isDark ? 'bg-white/[0.03] border-white/10' : 'bg-white border-slate-200 shadow-xl';
@@ -188,8 +193,21 @@ function Settings({ isDark, color, prefs, savePrefs, cats = [], saveCats }) {
     a.click(); URL.revokeObjectURL(url);
   };
 
-  const handleClearData = () => {
-    ['knapsack_w','knapsack_t','knapsack_p','knapsack_exp','knapsack_theme','knapsack_auth','knapsack_cats','knapsack_local_secret_key'].forEach(k => localStorage.removeItem(k));
+  const handleClearData = async () => {
+    const storageId = getAuthStorageId(auth);
+    const scopedKeys = getAllScopedDataKeys(storageId);
+    scopedKeys.forEach(k => localStorage.removeItem(k));
+    clearLocalSyncStamp(storageId);
+
+    // Clean any leftover legacy global finance keys.
+    ['knapsack_w', 'knapsack_t', 'knapsack_p', 'knapsack_exp', 'knapsack_cats'].forEach(k => localStorage.removeItem(k));
+
+    try {
+      await deleteCloudSnapshot(storageId);
+    } catch (err) {
+      console.error('Cloud account cleanup failed:', err);
+    }
+
     logout(true);
     navigate('/landing');
   };

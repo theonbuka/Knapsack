@@ -9,6 +9,7 @@ Knapsack, modern tasarımı ve güçlü özellikleriyle kişisel ve profesyonel 
 - 🏦 **Varlık Yönetimi**: Bankaları ve cüzdanları organize et
 - 📅 **Takvim Görünümü**: Harcamalarını tarih bazında incele
 - ⚙️ **Özelleştirme**: Kategoriler, cüzdanlar ve para birimlerini özelleştir
+- ☁️ **Hesap Bazlı Senkronizasyon (Opsiyonel)**: Supabase ile cihazlar arası veri senkronu
 - 🌙 **Koyu/Açık Mod**: Gözünü yorma, istediğin tema seç
 - 📱 **Mobil Uyumlu**: Telefondan, tablettten, masaüstünden erişebilir
 - ⚡ **Hızlı & Hafif**: Vite ile optimize edilmiş performans
@@ -18,17 +19,17 @@ Knapsack, modern tasarımı ve güçlü özellikleriyle kişisel ve profesyonel 
 | Kategori | Teknoloji |
 |----------|-----------|
 | **Framework** | React 19 |
-| **Build Tool** | Vite 8 |
+| **Build Tool** | Vite 6 |
 | **Styling** | Tailwind CSS 4 |
 | **Routing** | React Router v6 |
 | **Animasyonlar** | Framer Motion |
 | **İkonlar** | Lucide React |
-| **Data Storage** | localStorage (IndexedDB hazır) |
+| **Data Storage** | localStorage + opsiyonel Supabase sync |
 
 ## 🚀 Kurulum
 
 ### Gereksinimler
-- Node.js 16+ 
+- Node.js 18+
 - npm veya yarn
 
 ### Adımlar
@@ -40,6 +41,9 @@ cd knapsack-app
 
 # 2. Bağımlılıkları yükle
 npm install
+
+# 2.5 Supabase sync kullanacaksan ortam değişkenlerini hazırla (PowerShell)
+Copy-Item .env.example .env.local
 
 # 3. Geliştirme sunucusunu başlat
 npm run dev
@@ -76,14 +80,29 @@ src/
 ├── pages/           # Sayfa bileşenleri
 ├── hooks/           # Custom React hooks (useFinance)
 ├── utils/           # Sabitler ve yardımcı fonksiyonlar
-├── App.jsx          # Ana uygulama bileşeni
+├── App.tsx          # Ana uygulama bileşeni
 ├── App.css          # Global stiller
-└── main.jsx         # Giriş noktası
+└── main.tsx         # Giriş noktası
 
 public/              # Sabit dosyalar
 tests/               # E2E testleri
 scripts/             # Yardımcı scriptler
+supabase/            # Supabase SQL schema dosyaları
 ```
+
+## ☁️ Supabase Sync Kurulumu (Opsiyonel)
+
+1. Supabase projesi oluştur.
+2. SQL Editor'a `supabase/schema.sql` dosyasındaki scripti yapıştırıp çalıştır.
+3. `.env.local` dosyana aşağıdaki alanları gir:
+
+```bash
+VITE_SUPABASE_URL=https://<project-id>.supabase.co
+VITE_SUPABASE_ANON_KEY=<anon-public-key>
+VITE_SUPABASE_SYNC_TABLE=knapsack_user_data
+```
+
+Bu alanlar tanımlı değilse uygulama otomatik olarak local-first modda çalışmaya devam eder.
 
 ## 📦 Derleme & Deployment
 
@@ -104,9 +123,9 @@ Bu proje otomatik olarak Vercel'e uyumludur. Repoyu bağla ve otomatik deploymen
 
 ## 🔐 Veri Güvenliği
 
-- Veriler **localStorage** ile local olarak saklanır
-- Hiçbir bilgi sunuculara gönderilmez
-- Tamamen offline özellik hazır
+- Veriler localde şifreli olarak saklanır (local-first)
+- Supabase bilgileri tanımlanırsa hesap bazlı snapshot senkronu aktif olur
+- Supabase Auth entegrasyonu yoksa table policy seviyesi proje gereksinimine göre ayrıca sertleştirilmelidir
 
 ## 🧪 Test Etme
 
@@ -127,7 +146,7 @@ npm test:coverage
 ```
 
 Test dosyaları:
-- `src/tests/ErrorBoundary.test.ts` - Hata yönetimi testleri
+- `src/tests/ErrorBoundary.test.tsx` - Hata yönetimi testleri
 - `src/tests/useFinance.test.ts` - Hook mantığı testleri
 - `src/tests/utils.test.ts` - Utility fonksiyonları testleri
 
@@ -135,7 +154,7 @@ Test dosyaları:
 
 ```bash
 # E2E testleri çalıştır (uçtan uca entegrasyon testleri)
-python tests/e2e/test_knapsack.py
+./.venv/Scripts/python.exe tests/e2e/test_knapsack.py
 ```
 
 ## 📝 Lisans

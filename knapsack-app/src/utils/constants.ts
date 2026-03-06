@@ -1,4 +1,9 @@
 import { SecureStorage } from './secureStorage';
+import {
+  getActiveUserStorageId,
+  getScopedDataKey,
+  isAccountScopedDataKey,
+} from './accountStorage';
 
 export const themeColors = {
   indigo:  { bg: 'bg-indigo-600', text: 'text-indigo-600', border: 'border-indigo-500/20', hex: '#6366f1' },
@@ -47,20 +52,37 @@ export const PRESET_COLORS = [
 export const customDB = {
   get: (k, def) => {
     try {
-      const raw = localStorage.getItem(k);
+      const activeUserId = getActiveUserStorageId();
+      const accountScoped = isAccountScopedDataKey(k);
+      const resolvedKey = accountScoped ? getScopedDataKey(k, activeUserId) : k;
+
+      let raw = localStorage.getItem(resolvedKey);
+
+      // Backward compatibility: migrate old global keys into active account scope.
+      if (!raw && accountScoped) {
+        const legacyRaw = localStorage.getItem(k);
+        if (legacyRaw && activeUserId) {
+          localStorage.setItem(resolvedKey, legacyRaw);
+          localStorage.removeItem(k);
+          raw = legacyRaw;
+        } else if (legacyRaw) {
+          raw = legacyRaw;
+        }
+      }
+
       if (!raw) return def;
 
       // Legacy migration: old records were plain JSON; re-save them encrypted.
       try {
         const parsed = JSON.parse(raw);
         try {
-          SecureStorage.setSecure(k, parsed);
+          SecureStorage.setSecure(resolvedKey, parsed);
         } catch {
           // Keep working with parsed data even if migration write fails.
         }
         return parsed;
       } catch {
-        const decrypted = SecureStorage.getSecure(k);
+        const decrypted = SecureStorage.getSecure(resolvedKey);
         return decrypted ?? def;
       }
     } catch (err) {
@@ -70,12 +92,23 @@ export const customDB = {
   },
   set: (k, val) => {
     try {
-      SecureStorage.setSecure(k, val);
+      const activeUserId = getActiveUserStorageId();
+      const accountScoped = isAccountScopedDataKey(k);
+      const resolvedKey = accountScoped ? getScopedDataKey(k, activeUserId) : k;
+
+      SecureStorage.setSecure(resolvedKey, val);
+
+      if (accountScoped && activeUserId) {
+        localStorage.removeItem(k);
+      }
     } catch (err) {
       console.error('customDB.set error:', err);
       // Last-resort fallback keeps app usable if encryption write fails.
       try {
-        localStorage.setItem(k, JSON.stringify(val));
+        const activeUserId = getActiveUserStorageId();
+        const accountScoped = isAccountScopedDataKey(k);
+        const resolvedKey = accountScoped ? getScopedDataKey(k, activeUserId) : k;
+        localStorage.setItem(resolvedKey, JSON.stringify(val));
       } catch (fallbackErr) {
         console.error('customDB.set fallback error:', fallbackErr);
       }

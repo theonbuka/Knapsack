@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect, lazy, Suspense } from 'react';
+import React, { useState, useLayoutEffect, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -246,7 +246,7 @@ function QuickAddModal({
 /* ─── App Shell ───────────────────────────────────────────── */
 function App() {
   const loc = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, auth } = useAuth();
   const {
     data, liveRates, addTransaction, updateTransaction,
     addExpense, removeExpense, toggleExpensePaid, updateExpense,
@@ -272,6 +272,12 @@ function App() {
     document.body.style.backgroundColor = bg;
     root.classList.toggle('dark', isDark);
   }, [isDark]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      refresh();
+    }
+  }, [isAuthenticated, auth.email, auth.googleId, auth.name, auth.surname, refresh]);
 
   const toggleTheme = () => {
     setIsDark(prev => {

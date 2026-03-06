@@ -3,6 +3,12 @@ import { AuthState } from '../types';
 import { Encryption } from '../utils/encryption';
 import { RegisterSchema, LoginSchema, validateAndSanitize } from '../utils/validation';
 import { SecureStorage } from '../utils/secureStorage';
+import {
+  clearActiveUserStorageId,
+  getAuthStorageId,
+  migrateLegacyDataToUser,
+  setActiveUserStorageId,
+} from '../utils/accountStorage';
 
 interface GoogleLoginData {
   name: string;
@@ -112,11 +118,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const stored = SecureStorage.getSecure<AuthState>(AUTH_KEY);
       const normalizedStored = normalizeAuthState(stored);
       if (normalizedStored) {
+        if (normalizedStored.loggedIn) {
+          const storageId = getAuthStorageId(normalizedStored);
+          if (storageId) {
+            setActiveUserStorageId(storageId);
+            migrateLegacyDataToUser(storageId);
+          }
+        } else {
+          clearActiveUserStorageId();
+        }
         SecureStorage.setSecure(AUTH_KEY, normalizedStored);
         return normalizedStored;
       }
 
       const legacyStored = loadLegacyAuth();
+      if (legacyStored?.loggedIn) {
+        const storageId = getAuthStorageId(legacyStored);
+        if (storageId) {
+          setActiveUserStorageId(storageId);
+          migrateLegacyDataToUser(storageId);
+        }
+      } else {
+        clearActiveUserStorageId();
+      }
       return legacyStored || EMPTY_AUTH;
     } catch (err) {
       console.error('Failed to load auth:', err);
@@ -147,6 +171,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback((purge = false) => {
+    clearActiveUserStorageId();
+
     setAuth(prev => {
       if (purge) {
         try {
@@ -181,6 +207,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       googleId: data.googleId,
       picture: data.picture,
     };
+
+    const storageId = getAuthStorageId(nextAuth);
+    if (storageId) {
+      setActiveUserStorageId(storageId);
+      migrateLegacyDataToUser(storageId);
+    }
 
     setAuth(nextAuth);
     setError(null);
@@ -270,6 +302,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loggedIn: true,
       };
 
+      const storageId = getAuthStorageId(nextAuth);
+      if (storageId) {
+        setActiveUserStorageId(storageId);
+        migrateLegacyDataToUser(storageId);
+      }
+
       setAuth(nextAuth);
       persistAuth(nextAuth);
       return true;
@@ -312,6 +350,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         pin: '',
         loggedIn: true,
       };
+
+      const storageId = getAuthStorageId(newAuth);
+      if (storageId) {
+        setActiveUserStorageId(storageId);
+        migrateLegacyDataToUser(storageId);
+      }
 
       setAuth(newAuth);
       persistAuth(newAuth);

@@ -17,6 +17,7 @@
     "backup": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/backup.ps1"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.98.0",
     "@tailwindcss/vite": "^4.2.1",
     "crypto-js": "^4.2.0",
     "framer-motion": "^11.0.0",
