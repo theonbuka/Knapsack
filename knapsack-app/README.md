@@ -155,6 +155,9 @@ Test dosyaları:
 ```bash
 # E2E testleri çalıştır (uçtan uca entegrasyon testleri)
 ./.venv/Scripts/python.exe tests/e2e/test_knapsack.py
+
+# Cloud sync smoke testi (Supabase .env.local doluysa)
+./.venv/Scripts/python.exe -m pytest tests/e2e/test_cloud_sync.py -q
 ```
 
 ## 📝 Lisans
