@@ -133,6 +133,64 @@ npm run preview      # Derlenmiş sürümü göz at
 ### Vercel'de Deploy
 Bu proje otomatik olarak Vercel'e uyumludur. Repoyu bağla ve otomatik deployment aktif olacaktır.
 
+## 📱 Android Uygulama Olarak Yayınlama (Google Play)
+
+Bu proje Capacitor ile native Android uygulamaya paketlenebilir.
+
+### 1) Bir kereye mahsus kontrol
+
+- `capacitor.config.ts` dosyasında `appId` benzersiz olmalı.
+- Bu repoda mevcut değer: `com.theonbuka.knapsack`.
+- Play Store'da ilk yayın sonrası `applicationId` değiştirilemez.
+
+### 2) Android proje dosyalarını güncelle
+
+```bash
+npm run android:sync
+```
+
+Bu komut:
+- web uygulamasını (`dist/`) yeniden build eder,
+- Android projesine kopyalar,
+- plugin senkronizasyonu yapar.
+
+### 3) Android Studio'da aç
+
+```bash
+npm run android:open
+```
+
+Android Studio'da:
+- `android/app/build.gradle` içinde `versionCode` ve `versionName` değerlerini artır,
+- `Build > Generate Signed Bundle / APK` menüsünden `Android App Bundle (AAB)` üret.
+
+Alternatif (Windows terminal):
+
+```bash
+npm run android:aab   # AAB (Play Store için önerilen)
+npm run android:apk   # Release APK
+```
+
+### 4) Play Console'a yükle
+
+1. Google Play Console'da yeni uygulama oluştur.
+2. Üretilen `.aab` dosyasını `Production` veya `Internal testing` track'ine yükle.
+3. Store listing alanlarını doldur:
+	- Uygulama adı
+	- Açıklama
+	- Ekran görüntüleri
+	- İkon (512x512)
+	- Feature Graphic (1024x500)
+4. `Data safety` ve `Privacy Policy` alanlarını tamamla.
+5. İç testten sonra production yayını başlat.
+
+### 5) Her yeni sürümde
+
+1. Kod değişikliği yap.
+2. `npm run android:sync` çalıştır.
+3. `versionCode` artır.
+4. Yeni AAB üret ve Play Console'a yükle.
+
 ## 🔐 Veri Güvenliği
 
 - Veriler localde şifreli olarak saklanır (local-first)
