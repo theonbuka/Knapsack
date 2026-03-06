@@ -139,6 +139,75 @@ Bu proje otomatik olarak Vercel'e uyumludur. Repoyu bağla ve otomatik deploymen
 - Supabase bilgileri tanımlanırsa hesap bazlı snapshot senkronu aktif olur
 - Supabase Auth entegrasyonu yoksa table policy seviyesi proje gereksinimine göre ayrıca sertleştirilmelidir
 
+## ⚠️ Üretim Güvenliği (Domain-Agnostic Mitigations)
+
+Henüz özel alan adınız yoksa bile aşağıdaki kontroller maliyeti ve istismarı önler:
+
+### 1️⃣ **Kod Tarafı: Kayıt Kapatma ve Deneme Limiti**
+```bash
+# .env.local içinde:
+VITE_DISABLE_SIGNUP=true        # Yeni kayıtları kapat (istismar mitigation)
+VITE_AUTH_MAX_ATTEMPTS=8        # Başarısız 8 denemeden sonra cooldown
+VITE_AUTH_RATE_LIMIT_WINDOW_SECONDS=900  # 15 dakikalık cooldown penceresi
+```
+
+Test/demo akışı etkilenmez (`@knapsack.local` emails her zaman çalışır).
+
+### 2️⃣ **Supabase Panel: Güvenlik Ayarları**
+Aşağıdaki script tüm kontrol listesini gösterir:
+
+```bash
+$env:SUPABASE_API_TOKEN = "your_token"
+$env:SUPABASE_PROJECT_ID = "your_project_id"
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/supabase-security-check.ps1
+```
+
+**Kritik ayarlar (Dashboard > Authentication):**
+- ✅ Email > Confirm email: `ON`
+- ✅ Email > Bot/CAPTCHA protection: `ON` (eğer mevcut ise)
+- ✅ Security > Rate limits: Agresif throttle
+- ✅ Billing > Spending controls: Aylık limit + uyarılar
+
+### 3️⃣ **Supabase SQL: RLS Politikaları Sertleştirme**
+Şu anda anon erişimin izin veriliyor (dev için):
+
+```sql
+-- ❌ Geçerli (UNSAFE PRODUCTION):
+CREATE POLICY 'Allow anon read/write' ON knapsack_user_data
+USING(true) WITH CHECK(true)
+
+-- ✅ Hedef (AUTHENTICATED ONLY):
+CREATE POLICY 'Allow authenticated users own data' ON knapsack_user_data
+AS (auth.role() = 'authenticated')
+USING (account_id = auth.uid())
+WITH CHECK (account_id = auth.uid())
+```
+
+Update süreci:
+1. SQL Editor'a gidin > `knapsack_user_data` table
+2. Eski policy'i sil
+3. Yenisini ekle (yukarıdaki kodu kullan)
+
+### 4️⃣ **Emergency Cloud Sync Shutdown**
+Eğer saldırı algılarsan:
+
+```bash
+# .env.local veya server env'de:
+VITE_DISABLE_CLOUD_SYNC=true  # Tüm bulut senkrosu kapatılır
+```
+
+App otomatik local-first moda döner; veriler güvenli kalır.
+
+### 5️⃣ **SMTP & Email**
+Opsiyonel ama önerilen (custom domain için):
+
+1. Dashboard > Email > Custom SMTP
+2. Kendi mail sunucunuzu bağlayın
+3. SPF/DKIM/DMARC kayıtlarını ayarlayın
+4. Confirm-signup template uygulanmışsa (`supabase/templates/confirm-signup.html` 'e bakınız), hoş geldiniz + özellikler otomatik gider
+
+
+
 ## 🧪 Test Etme
 
 ### Unit Tests (Vitest)

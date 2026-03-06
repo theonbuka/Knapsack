@@ -3,6 +3,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL?.trim();
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 const SYNC_TABLE = import.meta.env.VITE_SUPABASE_SYNC_TABLE?.trim() || 'knapsack_user_data';
+const CLOUD_SYNC_DISABLED = import.meta.env.VITE_DISABLE_CLOUD_SYNC === 'true';
 
 export interface FinanceSnapshot {
   wallets: unknown[];
@@ -22,6 +23,10 @@ interface CloudSyncRow {
 let cachedClient: SupabaseClient | null = null;
 
 function getClient(): SupabaseClient | null {
+  if (CLOUD_SYNC_DISABLED) {
+    return null;
+  }
+
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     return null;
   }
@@ -36,6 +41,9 @@ function getClient(): SupabaseClient | null {
 }
 
 export function isCloudSyncConfigured(): boolean {
+  if (CLOUD_SYNC_DISABLED) {
+    return false;
+  }
   return Boolean(getClient());
 }
 

@@ -14,6 +14,11 @@ import {
   getSupabaseEmailRedirectUrl,
   isSupabaseAuthConfigured,
 } from '../utils/supabaseAuth';
+import {
+  clearAuthFailures,
+  getAuthRateLimitStatus,
+  recordAuthFailure,
+} from '../utils/authRateLimit';
 
 interface GoogleLoginData {
   name: string;
@@ -48,6 +53,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const AUTH_KEY = 'knapsack_auth';
 const HASH_REGEX = /^[a-f0-9]{64}$/i;
 const LOCAL_TEST_EMAIL_SUFFIX = '@knapsack.local';
+const SIGNUP_DISABLED = import.meta.env.VITE_DISABLE_SIGNUP === 'true';
 const EMPTY_AUTH: AuthState = {
   name: '',
   surname: '',
@@ -59,6 +65,14 @@ const EMPTY_AUTH: AuthState = {
 
 function isLocalBypassEmail(email: string): boolean {
   return email.endsWith(LOCAL_TEST_EMAIL_SUFFIX);
+}
+
+function isSupabaseAuthRequiredButMissing(email: string): boolean {
+  return !isLocalBypassEmail(email) && !isSupabaseAuthConfigured();
+}
+
+function isSignupDisabledForEmail(email: string): boolean {
+  return SIGNUP_DISABLED && !isLocalBypassEmail(email);
 }
 
 function isEmailNotConfirmedError(message: string): boolean {
@@ -274,6 +288,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [isAuthenticated, logout]);
 
   const login = async (email: string, password: string): Promise<boolean> => {
+    let normalizedEmailForRateLimit = '';
+    const fail = (message: string, shouldCountAttempt = true): false => {
+      setError(message);
+
+      if (
+        shouldCountAttempt &&
+        normalizedEmailForRateLimit &&
+        !isLocalBypassEmail(normalizedEmailForRateLimit)
+      ) {
+        recordAuthFailure('login', normalizedEmailForRateLimit);
+      }
+
+      return false;
+    };
+
     try {
       setError(null);
 
@@ -282,6 +311,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         { email, password }
       );
       const normalizedEmail = validated.email.toLowerCase();
+      normalizedEmailForRateLimit = normalizedEmail;
+
+      if (!isLocalBypassEmail(normalizedEmail)) {
+        const rateLimitStatus = getAuthRateLimitStatus('login', normalizedEmail);
+        if (rateLimitStatus.blocked) {
+          return fail(
+            `Çok fazla başarısız giriş denemesi. ${rateLimitStatus.retryAfterSeconds} saniye sonra tekrar dene.`,
+            false
+          );
+        }
+      }
+
+      if (isSupabaseAuthRequiredButMissing(normalizedEmail)) {
+        return fail('Email aktivasyon sistemi bu ortamda yapılandırılmamış. Yöneticiye VITE_SUPABASE_* değişkenlerini kontrol ettir.', false);
+      }
 
       const shouldUseSupabaseEmailAuth = isSupabaseAuthConfigured() && !isLocalBypassEmail(normalizedEmail);
       if (shouldUseSupabaseEmailAuth) {
@@ -293,8 +337,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           });
 
           if (signInError && isEmailNotConfirmedError(signInError.message)) {
-            setError('Email adresini doğrulamadan giriş yapamazsın. Aktivasyon mailindeki bağlantıyı aç.');
-            return false;
+            return fail('Email adresini doğrulamadan giriş yapamazsın. Aktivasyon mailindeki bağlantıyı aç.', false);
+          }
+
+          if (signInError) {
+            return fail(`Giriş başarısız: ${signInError.message}`);
           }
 
           if (!signInError && data.user) {
@@ -324,42 +371,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             setAuth(supabaseAuthState);
             persistAuth(supabaseAuthState);
+            clearAuthFailures('login', normalizedEmail);
 
             // Session tokens are not needed in this local-first app.
             void supabase.auth.signOut();
             return true;
           }
+
+          return fail('Giriş başarısız: Supabase kullanıcı kaydı bulunamadı.');
         }
+
+        return fail('Giriş başarısız: Supabase istemcisi başlatılamadı.');
       }
 
       // Get stored auth and support plaintext migration fallback.
       const storedAuth = normalizeAuthState(SecureStorage.getSecure<AuthState>(AUTH_KEY)) || loadLegacyAuth();
       if (!storedAuth) {
-        setError('Kullanıcı bulunamadı');
-        return false;
+        return fail('Kullanıcı bulunamadı');
       }
 
       if (storedAuth.googleId && !storedAuth.password && !storedAuth.pin) {
-        setError('Bu hesap Google ile giriş gerektirir');
-        return false;
+        return fail('Bu hesap Google ile giriş gerektirir');
       }
 
       if (!storedAuth.email || storedAuth.email !== normalizedEmail) {
-        setError('Email veya şifre hatalı');
-        return false;
+        return fail('Email veya şifre hatalı');
       }
 
       const storedSecret = storedAuth.password || storedAuth.pin;
       if (!storedSecret) {
-        setError('Kullanıcı bulunamadı');
-        return false;
+        return fail('Kullanıcı bulunamadı');
       }
 
       const isHashedMatch = Encryption.verifyPin(validated.password, storedSecret);
       const isLegacyPlainMatch = storedSecret === validated.password;
       if (!isHashedMatch && !isLegacyPlainMatch) {
-        setError('Email veya şifre hatalı');
-        return false;
+        return fail('Email veya şifre hatalı');
       }
 
       const passwordHash = isLegacyPlainMatch ? Encryption.hashPin(validated.password) : storedSecret;
@@ -380,11 +427,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setAuth(localAuthState);
       persistAuth(localAuthState);
+      clearAuthFailures('login', normalizedEmail);
       return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Giriş başarısız';
-      setError(message);
-      return false;
+      return fail(message);
     }
   };
 
@@ -394,6 +441,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string
   ): Promise<RegisterResult> => {
+    let normalizedEmailForRateLimit = '';
+    const fail = (message: string, shouldCountAttempt = true): RegisterResult => {
+      setError(message);
+
+      if (
+        shouldCountAttempt &&
+        normalizedEmailForRateLimit &&
+        !isLocalBypassEmail(normalizedEmailForRateLimit)
+      ) {
+        recordAuthFailure('register', normalizedEmailForRateLimit);
+      }
+
+      return { success: false };
+    };
+
     try {
       setError(null);
 
@@ -410,13 +472,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       const normalizedEmail = validated.email.toLowerCase();
+      normalizedEmailForRateLimit = normalizedEmail;
+
+      if (isSignupDisabledForEmail(normalizedEmail)) {
+        return fail('Yeni hesap kaydı geçici olarak kapalı. Lütfen daha sonra tekrar dene.', false);
+      }
+
+      if (!isLocalBypassEmail(normalizedEmail)) {
+        const rateLimitStatus = getAuthRateLimitStatus('register', normalizedEmail);
+        if (rateLimitStatus.blocked) {
+          return fail(
+            `Çok fazla başarısız kayıt denemesi. ${rateLimitStatus.retryAfterSeconds} saniye sonra tekrar dene.`,
+            false
+          );
+        }
+      }
+
+      if (isSupabaseAuthRequiredButMissing(normalizedEmail)) {
+        return fail('Aktivasyon emaili için Supabase yapılandırması eksik. VITE_SUPABASE_URL ve VITE_SUPABASE_ANON_KEY ayarlarını kontrol et.', false);
+      }
+
       const shouldUseSupabaseEmailAuth = isSupabaseAuthConfigured() && !isLocalBypassEmail(normalizedEmail);
 
       if (shouldUseSupabaseEmailAuth) {
         const supabase = getSupabaseAuthClient();
         if (!supabase) {
-          setError('Supabase bağlantısı kurulamadı. Lütfen tekrar deneyin.');
-          return { success: false };
+          return fail('Supabase bağlantısı kurulamadı. Lütfen tekrar deneyin.');
         }
 
         const redirectTo = getSupabaseEmailRedirectUrl();
@@ -433,8 +514,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         if (signUpError) {
-          setError(`Kayıt başarısız: ${signUpError.message}`);
-          return { success: false };
+          return fail(`Kayıt başarısız: ${signUpError.message}`);
         }
 
         if (data.session) {
@@ -445,8 +525,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const identityCount = Array.isArray(data.user?.identities) ? data.user.identities.length : 1;
         if (identityCount === 0) {
-          setError('Bu email zaten kayıtlı. Giriş yapmayı deneyin.');
-          return { success: false };
+          return fail('Bu email zaten kayıtlı. Giriş yapmayı deneyin.', false);
         }
 
         clearActiveUserStorageId();
@@ -462,6 +541,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         setAuth(pendingAuth);
         persistAuth(pendingAuth);
+        clearAuthFailures('register', normalizedEmail);
 
         return {
           success: false,
@@ -488,11 +568,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setAuth(newAuth);
       persistAuth(newAuth);
+      clearAuthFailures('register', normalizedEmail);
       return { success: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Kayıt başarısız';
-      setError(message);
-      return { success: false };
+      return fail(message);
     }
   };
 

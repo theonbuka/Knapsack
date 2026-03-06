@@ -5,6 +5,11 @@ interface ImportMetaEnv {
 	readonly VITE_SUPABASE_ANON_KEY?: string;
 	readonly VITE_SUPABASE_SYNC_TABLE?: string;
 	readonly VITE_SUPABASE_AUTH_REDIRECT_TO?: string;
+	readonly VITE_DISABLE_CLOUD_SYNC?: string;
+	readonly VITE_DISABLE_SIGNUP?: string;
+	readonly VITE_DISABLE_AUTH_RATE_LIMIT?: string;
+	readonly VITE_AUTH_MAX_ATTEMPTS?: string;
+	readonly VITE_AUTH_RATE_LIMIT_WINDOW_SECONDS?: string;
 }
 
 interface ImportMeta {
